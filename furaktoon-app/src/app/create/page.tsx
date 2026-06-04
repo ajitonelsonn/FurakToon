@@ -8,6 +8,7 @@ type Style = "anime" | "cartoon";
 type Phase =
   | "idle"
   | "safety"
+  | "safety_failed"
   | "safety_done"
   | "enhance"
   | "enhance_done"
@@ -33,6 +34,82 @@ function stepIndex(phase: Phase) {
   return -1;
 }
 
+type StepState = {
+  isFailed: boolean;
+  isDone: boolean;
+  isActive: boolean;
+  isPending: boolean;
+  wrapCls: string;
+  iconCls: string;
+  labelCls: string;
+  icon: string;
+};
+
+function resolveStepState(i: number, phase: Phase, stepIcon: string): StepState {
+  const current  = stepIndex(phase);
+  const isFailed = i === 0 && phase === "safety_failed";
+  const isDone   = !isFailed && (i < current || (i === current && (phase === "safety_done" || phase === "enhance_done")));
+  const isActive = i === current && !isDone && !isFailed;
+  const isPending = i > current && !isFailed;
+
+  let wrapCls = "border-gray-100 bg-white opacity-40";
+  if (isFailed)      wrapCls = "border-red-300 bg-red-50 scale-[1.02]";
+  else if (isActive) wrapCls = "border-sky bg-sky/5 shadow-lg scale-[1.02]";
+  else if (isDone)   wrapCls = "border-green-200 bg-green-50";
+
+  let iconCls = "bg-gray-100 text-gray-300";
+  if (isFailed)      iconCls = "bg-red-100 text-red-500";
+  else if (isActive) iconCls = "bg-sky text-white shadow-md animate-pulse";
+  else if (isDone)   iconCls = "bg-green-100 text-green-600";
+
+  let labelCls = "text-gray-300";
+  if (isFailed)      labelCls = "text-red-600";
+  else if (isActive) labelCls = "text-navy";
+  else if (isDone)   labelCls = "text-green-700";
+
+  let icon = stepIcon;
+  if (isFailed) icon = "✕";
+  else if (isDone) icon = "✓";
+
+  return { isFailed, isDone, isActive, isPending, wrapCls, iconCls, labelCls, icon };
+}
+
+/* Returns null on success, error string on failure */
+async function runSafetyCheck(prompt: string): Promise<string | null> {
+  try {
+    const res = await fetch("/api/safety", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+    const data = await res.json() as { safe?: boolean; reason?: string; error?: string };
+    if (data.error) return "Safety check failed. Please try again.";
+    if (!data.safe) {
+      return "That prompt isn't allowed. Please try a different idea!" +
+        (data.reason ? ` (${data.reason})` : "");
+    }
+    return null;
+  } catch {
+    return "Safety check failed. Please try again.";
+  }
+}
+
+/* Returns { imageUrl } on success, { error } on failure */
+async function runImageGeneration(
+  prompt: string, style: string, modelId: string
+): Promise<{ imageUrl?: string; warning?: string; error?: string }> {
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, style, modelId }),
+    });
+    return await res.json();
+  } catch {
+    return { error: "Generation failed. Please try again." };
+  }
+}
+
 export default function CreatePage() {
   const [prompt, setPrompt]             = useState("");
   const [style, setStyle]               = useState<Style>("anime");
@@ -44,7 +121,7 @@ export default function CreatePage() {
   const [enhancing, setEnhancing]       = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  const isGenerating = phase !== "idle" && phase !== "done" && phase !== "error";
+  const isGenerating = phase !== "idle" && phase !== "done" && phase !== "error" && phase !== "safety_failed";
 
   // Scroll to result when done
   useEffect(() => {
@@ -78,34 +155,35 @@ export default function CreatePage() {
     setError(null);
     setWarning(null);
     setImageUrl(null);
+
+    // Step 1: real safety check
     setPhase("safety");
+    const safetyErr = await runSafetyCheck(prompt);
+    if (safetyErr) {
+      setError(safetyErr);
+      setPhase("safety_failed");
+      return;
+    }
 
-    // Small delays so each step is visually distinct
-    await delay(900);  setPhase("safety_done");
-    await delay(400);  setPhase("enhance");
-    await delay(700);  setPhase("enhance_done");
-    await delay(300);  setPhase("painting");
+    // Step 2: visual enhancement step
+    setPhase("safety_done");
+    await delay(300);
+    setPhase("enhance");
+    await delay(800);
+    setPhase("enhance_done");
+    await delay(300);
 
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, style, modelId: selectedModel }),
-      });
-      const data = await res.json();
-
-      if (data.imageUrl) {
-        setPhase("finalizing");
-        await delay(700);
-        setImageUrl(data.imageUrl);
-        if (data.warning) setWarning(data.warning);
-        setPhase("done");
-      } else {
-        setError(data.error ?? "Generation failed");
-        setPhase("error");
-      }
-    } catch {
-      setError("Generation failed. Please try again.");
+    // Step 3: image generation
+    setPhase("painting");
+    const result = await runImageGeneration(prompt, style, selectedModel);
+    if (result.imageUrl) {
+      setPhase("finalizing");
+      await delay(600);
+      setImageUrl(result.imageUrl);
+      if (result.warning) setWarning(result.warning);
+      setPhase("done");
+    } else {
+      setError(result.error ?? "Generation failed");
       setPhase("error");
     }
   }
@@ -132,52 +210,39 @@ export default function CreatePage() {
           {/* Step progress */}
           <div className="space-y-3">
             {STEPS.map((step, i) => {
-              const current = stepIndex(phase);
-              const isDone    = i < current || (i === current && (phase === "safety_done" || phase === "enhance_done"));
-              const isActive  = i === current && !isDone;
-              const isPending = i > current;
-
-              let wrapCls = "border-gray-100 bg-white opacity-40";
-              if (isActive) wrapCls = "border-sky bg-sky/5 shadow-lg scale-[1.02]";
-              else if (isDone) wrapCls = "border-green-200 bg-green-50";
-
-              let iconCls = "bg-gray-100 text-gray-300";
-              if (isActive) iconCls = "bg-sky text-white shadow-md animate-pulse";
-              else if (isDone) iconCls = "bg-green-100 text-green-600";
-
-              let labelCls = "text-gray-300";
-              if (isActive) labelCls = "text-navy";
-              else if (isDone) labelCls = "text-green-700";
-
+              const s = resolveStepState(i, phase, step.icon);
               return (
                 <div
                   key={step.phase}
-                  className={`flex items-center gap-4 rounded-2xl px-5 py-4 border-2 transition-all duration-500 ${wrapCls}`}
+                  className={`flex items-center gap-4 rounded-2xl px-5 py-4 border-2 transition-all duration-500 ${s.wrapCls}`}
                 >
                   {/* Icon */}
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all duration-300 ${iconCls}`}>
-                    {isDone ? "✓" : step.icon}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all duration-300 ${s.iconCls}`}>
+                    {s.icon}
                   </div>
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm ${labelCls}`}>
+                    <p className={`font-bold text-sm ${s.labelCls}`}>
                       {step.label}
                     </p>
-                    {isActive && (
+                    {s.isFailed && (
+                      <p className="text-xs text-red-400 mt-0.5 font-medium">Blocked — prompt not allowed</p>
+                    )}
+                    {s.isActive && (
                       <p className="text-xs text-sky mt-0.5 flex items-center gap-1">
                         <span className="inline-block w-1.5 h-1.5 bg-sky rounded-full animate-ping" />
                         {step.sublabel}
                       </p>
                     )}
-                    {isDone && <p className="text-xs text-green-500 mt-0.5">Complete</p>}
+                    {s.isDone && <p className="text-xs text-green-500 mt-0.5">Complete</p>}
                   </div>
 
                   {/* Active spinner */}
-                  {isActive && (
+                  {s.isActive && (
                     <div className="shrink-0 w-5 h-5 border-2 border-sky border-t-transparent rounded-full animate-spin" />
                   )}
-                  {isPending && (
+                  {s.isPending && (
                     <div className="shrink-0 w-2 h-2 rounded-full bg-gray-200" />
                   )}
                 </div>
