@@ -132,10 +132,6 @@ function MarketingHome() {
             priority
           />
 
-          <div className="inline-flex items-center gap-2 bg-sky/10 border border-sky/30 text-navy text-xs font-bold px-4 py-1.5 rounded-full">
-            ✨ Powered by Together AI
-          </div>
-
           <h1 className="text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight text-ink">
             Beautiful{" "}
             <span className="relative inline-block">

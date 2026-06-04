@@ -1,20 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { IMAGE_MODELS } from "@/lib/models";
 
 type Style = "anime" | "cartoon";
+type Phase =
+  | "idle"
+  | "safety"
+  | "safety_done"
+  | "enhance"
+  | "enhance_done"
+  | "painting"
+  | "finalizing"
+  | "done"
+  | "error";
+
+const STEPS: { phase: Phase; icon: string; label: string; sublabel: string }[] = [
+  { phase: "safety",    icon: "🛡️", label: "Safety Check",     sublabel: "Scanning your prompt…"         },
+  { phase: "enhance",   icon: "✦",  label: "Polishing Prompt", sublabel: "Adding style & detail…"        },
+  { phase: "painting",  icon: "🎨", label: "Painting",         sublabel: "AI is drawing your toon…"      },
+  { phase: "finalizing",icon: "✨", label: "Finalizing",       sublabel: "Saving to your gallery…"       },
+];
+
+const PHASE_ORDER: Phase[] = ["safety", "safety_done", "enhance", "enhance_done", "painting", "finalizing", "done"];
+
+function stepIndex(phase: Phase) {
+  if (phase === "safety" || phase === "safety_done") return 0;
+  if (phase === "enhance" || phase === "enhance_done") return 1;
+  if (phase === "painting") return 2;
+  if (phase === "finalizing") return 3;
+  return -1;
+}
 
 export default function CreatePage() {
-  const [prompt, setPrompt] = useState("");
-  const [style, setStyle] = useState<Style>("anime");
+  const [prompt, setPrompt]             = useState("");
+  const [style, setStyle]               = useState<Style>("anime");
   const [selectedModel, setSelectedModel] = useState<string>(IMAGE_MODELS[0].id);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [enhancing, setEnhancing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
+  const [imageUrl, setImageUrl]         = useState<string | null>(null);
+  const [phase, setPhase]               = useState<Phase>("idle");
+  const [error, setError]               = useState<string | null>(null);
+  const [warning, setWarning]           = useState<string | null>(null);
+  const [enhancing, setEnhancing]       = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  const isGenerating = phase !== "idle" && phase !== "done" && phase !== "error";
+
+  // Scroll to result when done
+  useEffect(() => {
+    if (phase === "done" && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [phase]);
 
   async function handleEnhance() {
     if (!prompt.trim()) return;
@@ -38,10 +75,17 @@ export default function CreatePage() {
 
   async function handleGenerate() {
     if (!prompt.trim()) return;
-    setLoading(true);
     setError(null);
     setWarning(null);
     setImageUrl(null);
+    setPhase("safety");
+
+    // Small delays so each step is visually distinct
+    await delay(900);  setPhase("safety_done");
+    await delay(400);  setPhase("enhance");
+    await delay(700);  setPhase("enhance_done");
+    await delay(300);  setPhase("painting");
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -49,38 +93,225 @@ export default function CreatePage() {
         body: JSON.stringify({ prompt, style, modelId: selectedModel }),
       });
       const data = await res.json();
+
       if (data.imageUrl) {
+        setPhase("finalizing");
+        await delay(700);
         setImageUrl(data.imageUrl);
         if (data.warning) setWarning(data.warning);
+        setPhase("done");
       } else {
         setError(data.error ?? "Generation failed");
+        setPhase("error");
       }
     } catch {
       setError("Generation failed. Please try again.");
-    } finally {
-      setLoading(false);
+      setPhase("error");
     }
   }
 
+  function handleReset() {
+    setPhase("idle");
+    setImageUrl(null);
+    setError(null);
+    setWarning(null);
+  }
+
+  /* ── GENERATING VIEW ── */
+  if (isGenerating) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 min-h-[60vh]">
+        <div className="w-full max-w-sm space-y-10">
+
+          {/* Title */}
+          <div className="text-center">
+            <p className="text-xs font-bold text-navy/40 uppercase tracking-widest mb-2">Creating your toon</p>
+            <p className="text-sm text-gray-400 truncate max-w-xs mx-auto">&ldquo;{prompt}&rdquo;</p>
+          </div>
+
+          {/* Step progress */}
+          <div className="space-y-3">
+            {STEPS.map((step, i) => {
+              const current = stepIndex(phase);
+              const isDone    = i < current || (i === current && (phase === "safety_done" || phase === "enhance_done"));
+              const isActive  = i === current && !isDone;
+              const isPending = i > current;
+
+              let wrapCls = "border-gray-100 bg-white opacity-40";
+              if (isActive) wrapCls = "border-sky bg-sky/5 shadow-lg scale-[1.02]";
+              else if (isDone) wrapCls = "border-green-200 bg-green-50";
+
+              let iconCls = "bg-gray-100 text-gray-300";
+              if (isActive) iconCls = "bg-sky text-white shadow-md animate-pulse";
+              else if (isDone) iconCls = "bg-green-100 text-green-600";
+
+              let labelCls = "text-gray-300";
+              if (isActive) labelCls = "text-navy";
+              else if (isDone) labelCls = "text-green-700";
+
+              return (
+                <div
+                  key={step.phase}
+                  className={`flex items-center gap-4 rounded-2xl px-5 py-4 border-2 transition-all duration-500 ${wrapCls}`}
+                >
+                  {/* Icon */}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all duration-300 ${iconCls}`}>
+                    {isDone ? "✓" : step.icon}
+                  </div>
+
+                  {/* Text */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-bold text-sm ${labelCls}`}>
+                      {step.label}
+                    </p>
+                    {isActive && (
+                      <p className="text-xs text-sky mt-0.5 flex items-center gap-1">
+                        <span className="inline-block w-1.5 h-1.5 bg-sky rounded-full animate-ping" />
+                        {step.sublabel}
+                      </p>
+                    )}
+                    {isDone && <p className="text-xs text-green-500 mt-0.5">Complete</p>}
+                  </div>
+
+                  {/* Active spinner */}
+                  {isActive && (
+                    <div className="shrink-0 w-5 h-5 border-2 border-sky border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {isPending && (
+                    <div className="shrink-0 w-2 h-2 rounded-full bg-gray-200" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Painting animation */}
+          {(phase === "painting" || phase === "finalizing") && (
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative w-48 h-48 rounded-3xl overflow-hidden bg-navy/5 border-2 border-navy/10 flex items-center justify-center">
+                {/* Animated paint strokes */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-7xl animate-bounce" style={{ animationDuration: "1.5s" }}>🎨</div>
+                </div>
+                {/* Shimmer overlay */}
+                <div className="absolute inset-0 shimmer opacity-30 rounded-3xl" />
+              </div>
+              <div className="flex gap-1.5">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-sky bounce-dot"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── RESULT VIEW ── */
+  if (phase === "done" && imageUrl) {
+    return (
+      <div className="flex-1 px-4 sm:px-6 py-10 max-w-xl mx-auto w-full" ref={resultRef}>
+        <div className="space-y-5">
+          {/* Header */}
+          <div className="text-center">
+            <p className="text-2xl font-extrabold text-navy">Your toon is ready! ✨</p>
+            <p className="text-sm text-gray-400 mt-1 line-clamp-1">&ldquo;{prompt}&rdquo;</p>
+          </div>
+
+          {/* Completed steps summary */}
+          <div className="grid grid-cols-4 gap-2">
+            {STEPS.map((step) => (
+              <div key={step.phase} className="flex flex-col items-center gap-1 bg-green-50 border border-green-100 rounded-2xl py-3 px-1">
+                <span className="text-green-500 font-bold text-sm">✓</span>
+                <span className="text-xs text-green-600 font-semibold text-center leading-tight">{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Image */}
+          <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-navy/10 bg-white">
+            <Image
+              src={imageUrl}
+              alt="Generated toon"
+              width={1024}
+              height={1024}
+              className="w-full h-auto"
+              unoptimized
+            />
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleReset}
+              className="flex-1 py-3.5 rounded-2xl border-2 border-navy/20 text-navy font-bold hover:bg-navy/5 transition-all active:scale-95"
+            >
+              ← Create another
+            </button>
+            <a
+              href={imageUrl}
+              download="furaktoon.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-3.5 rounded-2xl bg-navy hover:bg-[#2a3f8f] text-white font-bold text-center shadow-lg hover:shadow-xl transition-all active:scale-95"
+            >
+              ↓ Download
+            </a>
+          </div>
+
+          {warning && (
+            <div className="bg-orange/10 border border-orange/30 text-orange rounded-2xl p-3 text-xs font-medium">
+              ⚠️ {warning}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ── ERROR VIEW ── */
+  if (phase === "error") {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
+        <div className="text-5xl mb-4">😬</div>
+        <p className="text-xl font-extrabold text-navy mb-2">Something went wrong</p>
+        <p className="text-sm text-red-500 mb-6 max-w-sm">{error}</p>
+        <button
+          onClick={handleReset}
+          className="bg-navy hover:bg-[#2a3f8f] text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all"
+        >
+          ← Try again
+        </button>
+      </div>
+    );
+  }
+
+  /* ── IDLE / FORM VIEW ── */
   return (
     <div className="flex-1 px-4 sm:px-6 py-10 max-w-2xl mx-auto w-full">
 
       {/* Header */}
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-extrabold text-navy">Create Your Toon</h1>
-        <p className="text-gray-400 text-sm mt-1.5">Describe your idea and watch it come to life ✨</p>
+        <p className="text-gray-400 text-sm mt-1.5">Describe your idea and watch it come to life</p>
       </div>
 
       <div className="space-y-5">
+
         {/* Style Toggle */}
         <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
           <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">Style</p>
           <div className="grid grid-cols-2 gap-3">
             {(["anime", "cartoon"] as Style[]).map((s) => {
               const active = style === s;
-              let activeClass = "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200";
+              let cls = "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200";
               if (active) {
-                activeClass = s === "anime"
+                cls = s === "anime"
                   ? "border-sky bg-sky/10 text-navy shadow-md"
                   : "border-orange bg-orange/10 text-navy shadow-md";
               }
@@ -88,7 +319,7 @@ export default function CreatePage() {
                 <button
                   key={s}
                   onClick={() => setStyle(s)}
-                  className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-bold text-sm transition-all duration-150 ${activeClass}`}
+                  className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-bold text-sm transition-all duration-150 ${cls}`}
                 >
                   {s === "anime" ? "🎌 Anime" : "🎨 Cartoon"}
                   {active && <span className="w-2 h-2 rounded-full bg-current opacity-60" />}
@@ -114,7 +345,7 @@ export default function CreatePage() {
             disabled={enhancing || !prompt.trim()}
             className="mt-2 flex items-center gap-1.5 text-xs text-sky hover:text-navy font-bold disabled:opacity-30 transition-colors"
           >
-            <span className={enhancing ? "animate-spin" : ""}>✦</span>
+            <span className={enhancing ? "animate-spin inline-block" : ""}>✦</span>
             {enhancing ? "Enhancing with AI…" : "Enhance my prompt with AI"}
           </button>
         </div>
@@ -146,67 +377,41 @@ export default function CreatePage() {
           </div>
         </div>
 
+        {/* Process preview */}
+        <div className="bg-navy/3 border border-navy/8 rounded-3xl p-4">
+          <p className="text-xs font-bold text-navy/40 uppercase tracking-widest mb-3 text-center">What happens when you click Generate</p>
+          <div className="flex items-center justify-between gap-1">
+            {STEPS.map((step, i) => (
+              <div key={step.phase} className="flex items-center gap-1 flex-1">
+                <div className="flex flex-col items-center gap-1 flex-1">
+                  <span className="text-lg">{step.icon}</span>
+                  <span className="text-xs text-navy/50 font-semibold text-center leading-tight">{step.label}</span>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <span className="text-gray-200 text-sm shrink-0">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Generate Button */}
         <button
           onClick={handleGenerate}
-          disabled={loading || !prompt.trim()}
+          disabled={!prompt.trim()}
           className={`w-full py-4 rounded-2xl font-extrabold text-white text-lg shadow-xl hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 ${
             style === "anime"
               ? "bg-sky hover:bg-[#3a9fd6] glow-sky"
               : "bg-orange hover:bg-[#d97316] glow-orange"
           }`}
         >
-          {loading ? <LoadingDots /> : "✨ Generate Toon"}
+          ✨ Generate Toon
         </button>
-
-        {/* Warning */}
-        {warning && (
-          <div className="bg-orange/10 border border-orange/30 text-orange rounded-2xl p-4 text-sm font-medium">
-            ⚠️ {warning}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 text-sm font-medium">
-            {error}
-          </div>
-        )}
-
-        {/* Result */}
-        {imageUrl && (
-          <div className="rounded-3xl overflow-hidden shadow-2xl border border-navy/10 bg-white">
-            <Image src={imageUrl} alt="Generated toon" width={1024} height={1024} className="w-full h-auto" unoptimized />
-            <div className="p-4 flex items-center justify-between gap-3">
-              <p className="text-xs text-gray-400 truncate">{prompt}</p>
-              <a
-                href={imageUrl}
-                download="furaktoon.png"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 text-sm bg-navy hover:bg-[#2a3f8f] text-white font-bold px-5 py-2.5 rounded-xl shadow transition-all active:scale-95"
-              >
-                ↓ Download
-              </a>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-function LoadingDots() {
-  return (
-    <span className="flex items-center justify-center gap-1.5">
-      <span className="text-sm mr-1">Generating your toon</span>
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="w-2 h-2 bg-white rounded-full bounce-dot"
-          style={{ animationDelay: `${i * 0.2}s` }}
-        />
-      ))}
-    </span>
-  );
+function delay(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
 }
