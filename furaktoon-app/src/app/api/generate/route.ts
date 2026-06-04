@@ -65,7 +65,9 @@ async function generateImage(
   finalPrompt: string,
   referenceUrl: string | undefined,
   referenceParam: "image_url" | "reference_images" | undefined,
-): Promise<string> {
+  responseFormat: "base64" | "url" | undefined,
+  noSteps: boolean,
+): Promise<{ url?: string; b64?: string }> {
   let refExtra: Record<string, unknown> = {};
   if (referenceUrl && referenceParam === "image_url") {
     refExtra = { image_url: referenceUrl };
@@ -73,37 +75,52 @@ async function generateImage(
     refExtra = { reference_images: [referenceUrl] };
   }
 
+  const useBase64 = responseFormat === "base64";
+
   const result = await together.images.generate({
     model: modelId,
     prompt: finalPrompt,
     width: 1024,
     height: 1024,
-    steps,
+    ...(noSteps ? {} : { steps }),
     n: 1,
+    response_format: useBase64 ? "base64" : "url",
     ...refExtra,
   });
-  return (result.data[0] as { url?: string })?.url ?? "";
+
+  const item = result.data[0] as { url?: string; b64_json?: string };
+  if (useBase64 && item.b64_json) {
+    return { b64: item.b64_json };
+  }
+  return { url: item.url ?? "" };
 }
 
 async function storeGeneratedImage(
-  imageUrl: string,
+  source: { url?: string; b64?: string },
   userId: string,
 ): Promise<string> {
   const serviceSupabase = createServiceRoleClient();
+  const fileName = `${userId}/${Date.now()}.png`;
   try {
-    const imgBuffer = await (await fetch(imageUrl)).arrayBuffer();
-    const fileName = `${userId}/${Date.now()}.png`;
+    let imgBuffer: ArrayBuffer;
+    if (source.b64) {
+      imgBuffer = Uint8Array.from(atob(source.b64), (c) => c.codePointAt(0) ?? 0).buffer;
+    } else if (source.url) {
+      imgBuffer = await (await fetch(source.url)).arrayBuffer();
+    } else {
+      return "";
+    }
     const { error } = await serviceSupabase.storage
       .from("images")
       .upload(fileName, imgBuffer, { contentType: "image/png" });
     if (error) {
       console.error("[storage upload error]", error);
-      return imageUrl;
+      return source.url ?? "";
     }
     return serviceSupabase.storage.from("images").getPublicUrl(fileName).data.publicUrl;
   } catch (e) {
     console.error("[storage exception]", e);
-    return imageUrl;
+    return source.url ?? "";
   }
 }
 
@@ -113,10 +130,18 @@ async function tryGenerateImage(
   finalPrompt: string,
   referenceUrl: string | undefined,
   referenceParam: "image_url" | "reference_images" | undefined,
+  responseFormat: "base64" | "url" | undefined,
+  noSteps: boolean,
 ): Promise<{ imageUrl?: string; genError?: Response }> {
   try {
-    const url = await generateImage(modelId, steps, finalPrompt, referenceUrl, referenceParam);
-    return { imageUrl: url };
+    const result = await generateImage(
+      modelId, steps, finalPrompt, referenceUrl, referenceParam, responseFormat, noSteps,
+    );
+    // b64 — turn into a data URL for immediate display (will be replaced by stored URL)
+    const imageUrl = result.b64
+      ? `data:image/png;base64,${result.b64}`
+      : result.url ?? "";
+    return { imageUrl };
   } catch (err: unknown) {
     console.error("[image generation error]", JSON.stringify(err), err);
     const errStatus = err && typeof err === "object" && "status" in err
@@ -131,6 +156,28 @@ async function tryGenerateImage(
     }
     return { genError: Response.json({ error: `Image generation failed: ${errMessage}` }, { status: 500 }) };
   }
+}
+
+type SaveParams = {
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  userId: string; prompt: string; style: string; modelId: string;
+  imageUrl: string;
+};
+
+async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageUrl }: SaveParams) {
+  const isDataUrl = imageUrl.startsWith("data:");
+  const storedUrl = await storeGeneratedImage(
+    isDataUrl ? { b64: imageUrl.split(",")[1] } : { url: imageUrl },
+    userId,
+  );
+  const { error: dbError } = await supabase.from("generations").insert({
+    user_id: userId, prompt, style, model: modelId, image_url: storedUrl,
+  });
+  if (dbError) {
+    console.error("[db insert error]", dbError);
+    return Response.json({ imageUrl: storedUrl, warning: "Image generated but not saved to gallery: " + dbError.message });
+  }
+  return Response.json({ imageUrl: storedUrl });
 }
 
 export async function POST(request: Request) {
@@ -182,32 +229,14 @@ export async function POST(request: Request) {
   const finalPrompt = faceInstruction + stylePrefix + prompt;
 
   // Generate image
-  const refParam = "referenceParam" in model ? model.referenceParam : undefined;
+  const refParam   = "referenceParam" in model ? model.referenceParam : undefined;
+  const respFormat = "responseFormat" in model ? model.responseFormat : undefined;
+  const noSteps    = "noSteps" in model && model.noSteps === true;
   const { imageUrl, genError } = await tryGenerateImage(
-    model.id, model.steps, finalPrompt, referenceUrl, refParam,
+    model.id, model.steps, finalPrompt, referenceUrl, refParam, respFormat, noSteps,
   );
   if (genError) return genError;
   if (!imageUrl) return Response.json({ error: "No image returned" }, { status: 500 });
 
-  // Store generated image
-  const storedUrl = await storeGeneratedImage(imageUrl, user.id);
-
-  // Save to database
-  const { error: dbError } = await supabase.from("generations").insert({
-    user_id: user.id,
-    prompt,
-    style,
-    model: modelId,
-    image_url: storedUrl,
-  });
-
-  if (dbError) {
-    console.error("[db insert error]", dbError);
-    return Response.json({
-      imageUrl: storedUrl,
-      warning: "Image generated but not saved to gallery: " + dbError.message,
-    });
-  }
-
-  return Response.json({ imageUrl: storedUrl });
+  return saveAndRespond({ supabase, userId: user.id, prompt, style, modelId, imageUrl });
 }

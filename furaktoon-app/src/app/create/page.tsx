@@ -537,31 +537,41 @@ export default function CreatePage() {
 
         {/* Model Picker */}
         <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
-          <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">AI Model</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-navy/50 uppercase tracking-widest">AI Model</p>
+            {referenceFile && (
+              <p className="text-xs text-orange font-semibold">📸 Reference mode — only Ref models available</p>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {IMAGE_MODELS.map((m) => {
               const active = selectedModel === m.id;
+              const locked = !!referenceFile && !m.supportsReferenceImage;
+              let cardCls = "border-gray-100 hover:border-navy/20 bg-gray-50";
+              if (active) cardCls = "border-navy bg-navy/5 shadow-md";
+              if (locked) cardCls = "border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed";
               return (
-                <button key={m.id} onClick={() => setSelectedModel(m.id)}
-                  className={`text-left rounded-2xl border-2 p-4 transition-all duration-150 ${active ? "border-navy bg-navy/5 shadow-md" : "border-gray-100 hover:border-navy/20 bg-gray-50"}`}>
+                <button
+                  key={m.id}
+                  onClick={() => { if (!locked) setSelectedModel(m.id); }}
+                  disabled={locked}
+                  className={`text-left rounded-2xl border-2 p-4 transition-all duration-150 ${cardCls}`}
+                >
                   <div className="flex items-center justify-between mb-1 gap-1 flex-wrap">
-                    <span className={`font-bold text-sm ${active ? "text-navy" : "text-gray-600"}`}>{m.name}</span>
+                    <span className={`font-bold text-sm ${active && !locked ? "text-navy" : "text-gray-600"}`}>{m.name}</span>
                     <div className="flex items-center gap-1">
                       {m.supportsReferenceImage && (
                         <span className="text-xs bg-orange/15 text-orange font-bold px-2 py-0.5 rounded-full">📸 Ref</span>
                       )}
-                      {"default" in m && m.default && (
+                      {"default" in m && m.default && !referenceFile && (
                         <span className="text-xs bg-sky/20 text-sky font-bold px-2 py-0.5 rounded-full">Default</span>
                       )}
-                      {referenceFile && !m.supportsReferenceImage && (
-                        <span className="text-xs bg-red-50 text-red-400 font-bold px-2 py-0.5 rounded-full">No ref</span>
+                      {locked && (
+                        <span className="text-xs bg-gray-100 text-gray-400 font-bold px-2 py-0.5 rounded-full">🔒 Locked</span>
                       )}
                     </div>
                   </div>
                   <p className="text-xs text-gray-400">{m.description}</p>
-                  {referenceFile && !m.supportsReferenceImage && active && (
-                    <p className="text-xs text-orange font-medium mt-1.5">⚠️ Reference image will be ignored with this model</p>
-                  )}
                 </button>
               );
             })}

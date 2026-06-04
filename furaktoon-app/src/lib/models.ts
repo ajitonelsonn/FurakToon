@@ -15,12 +15,14 @@ export const IMAGE_MODELS = [
     supportsReferenceImage: false,
   },
   {
-    id: "black-forest-labs/FLUX.1-kontext-pro",
-    name: "Flux Kontext Pro",
+    id: "google/flash-image-2.5",
+    name: "Gemini Flash Image",
     description: "Best for reference faces — upload a photo to anime-ify.",
-    steps: 28,
+    steps: 4,
+    noSteps: true,
     supportsReferenceImage: true,
-    referenceParam: "image_url" as const,
+    referenceParam: "reference_images" as const,
+    responseFormat: "base64" as const,
   },
 ] as const;
 
