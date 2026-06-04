@@ -2,6 +2,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Generation } from "@/lib/supabase/types";
 import { IMAGE_MODELS } from "@/lib/models";
+import DownloadButton from "@/components/DownloadButton";
 
 export default async function GalleryPage() {
   const supabase = await createClient();
@@ -83,15 +84,7 @@ function GalleryCard({ gen }: { gen: Generation }) {
           <span>{modelName}</span>
           <span>{date}</span>
         </div>
-        <a
-          href={gen.image_url}
-          download="furaktoon.png"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 rounded-xl transition"
-        >
-          ↓ Download
-        </a>
+        <DownloadButton imageUrl={gen.image_url} style={gen.style} model={gen.model} />
       </div>
     </div>
   );

@@ -26,8 +26,19 @@ export default function CreatePage() {
         body: JSON.stringify({ prompt, style }),
       });
       const data = await res.json();
-      if (data.enhanced) setPrompt(data.enhanced);
-      else setError(data.error ?? "Enhancement failed");
+      if (data.enhanced) {
+        const originalLength = prompt.length;
+        setPrompt(data.enhanced);
+        if (typeof pendo !== "undefined") {
+          pendo.track("prompt_enhanced", {
+            style,
+            originalPromptLength: originalLength,
+            enhancedPromptLength: data.enhanced.length,
+          });
+        }
+      } else {
+        setError(data.error ?? "Enhancement failed");
+      }
     } catch {
       setError("Enhancement failed. Please try again.");
     } finally {
@@ -47,10 +58,38 @@ export default function CreatePage() {
         body: JSON.stringify({ prompt, style, modelId: selectedModel }),
       });
       const data = await res.json();
-      if (data.imageUrl) setImageUrl(data.imageUrl);
-      else setError(data.error ?? "Generation failed");
+      if (data.imageUrl) {
+        setImageUrl(data.imageUrl);
+        if (typeof pendo !== "undefined") {
+          const modelName = IMAGE_MODELS.find((m) => m.id === selectedModel)?.name ?? selectedModel;
+          pendo.track("image_generated", {
+            style,
+            modelId: selectedModel,
+            modelName,
+            promptLength: prompt.length,
+          });
+        }
+      } else {
+        setError(data.error ?? "Generation failed");
+        if (typeof pendo !== "undefined") {
+          pendo.track("image_generation_failed", {
+            style,
+            modelId: selectedModel,
+            errorMessage: (data.error ?? "Generation failed").substring(0, 100),
+            promptLength: prompt.length,
+          });
+        }
+      }
     } catch {
       setError("Generation failed. Please try again.");
+      if (typeof pendo !== "undefined") {
+        pendo.track("image_generation_failed", {
+          style,
+          modelId: selectedModel,
+          errorMessage: "Network error",
+          promptLength: prompt.length,
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -185,6 +224,15 @@ export default function CreatePage() {
               download="furaktoon.png"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                if (typeof pendo !== "undefined") {
+                  pendo.track("image_downloaded", {
+                    source: "create",
+                    style,
+                    modelId: selectedModel,
+                  });
+                }
+              }}
               className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-xl transition"
             >
               ↓ Download

@@ -1,6 +1,7 @@
 import Together from "together-ai";
 import { createClient } from "@/lib/supabase/server";
 import { IMAGE_MODELS } from "@/lib/models";
+import { pendoTrackServer } from "@/lib/pendo";
 
 const together = new Together();
 
@@ -54,6 +55,12 @@ export async function POST(request: Request) {
     const verdict = JSON.parse(content) as { safe: boolean; reason?: string };
 
     if (!verdict.safe) {
+      await pendoTrackServer("content_moderation_blocked", user.id, {
+        style,
+        modelId,
+        moderationReason: (verdict.reason ?? "unknown").substring(0, 100),
+        promptLength: prompt.length,
+      });
       return Response.json(
         {
           error:

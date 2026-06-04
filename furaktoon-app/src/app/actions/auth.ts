@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { pendoTrackServer } from "@/lib/pendo";
 
 export async function login(formData: FormData) {
   const supabase = await createClient();
@@ -12,11 +13,17 @@ export async function login(formData: FormData) {
     password: formData.get("password") as string,
   };
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  const { error, data: authData } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
     return { error: error.message };
   }
+
+  const emailDomain = data.email.split("@")[1] ?? "unknown";
+  await pendoTrackServer("user_logged_in", authData.user.id, {
+    email_domain: emailDomain,
+    login_method: "password",
+  });
 
   revalidatePath("/", "layout");
   redirect("/create");
@@ -30,11 +37,17 @@ export async function register(formData: FormData) {
     password: formData.get("password") as string,
   };
 
-  const { error } = await supabase.auth.signUp(data);
+  const { error, data: authData } = await supabase.auth.signUp(data);
 
   if (error) {
     return { error: error.message };
   }
+
+  const emailDomain = data.email.split("@")[1] ?? "unknown";
+  await pendoTrackServer("user_registered", authData.user?.id ?? "unknown", {
+    email_domain: emailDomain,
+    signup_source: "registration_form",
+  });
 
   revalidatePath("/", "layout");
   redirect("/create");
@@ -42,7 +55,15 @@ export async function register(formData: FormData) {
 
 export async function logout() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   await supabase.auth.signOut();
+
+  if (user) {
+    await pendoTrackServer("user_logged_out", user.id);
+  }
+
   revalidatePath("/", "layout");
   redirect("/");
 }
