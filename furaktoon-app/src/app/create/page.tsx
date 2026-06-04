@@ -176,7 +176,7 @@ export default function CreatePage() {
       const res = await fetch("/api/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, style }),
+        body: JSON.stringify({ prompt, style, hasReference: !!referenceFile }),
       });
       const data = await res.json();
       if (data.enhanced) setPrompt(data.enhanced);

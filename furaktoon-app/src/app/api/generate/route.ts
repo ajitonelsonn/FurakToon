@@ -167,15 +167,24 @@ export async function POST(request: Request) {
     ? await uploadReferenceImage(effectiveRefFile, user.id)
     : undefined;
 
-  // Build prompt with style prefix
+  // Build final prompt — when a reference face is provided, prepend strong
+  // face-preservation instructions so the model keeps the person's identity
   const stylePrefix = style === "anime"
-    ? "anime style, manga art, cel shading, vibrant colors, detailed, "
+    ? "anime style, manga art, cel shading, vibrant colors, highly detailed, "
     : "modern cartoon style, clean bold outlines, flat colors, playful, ";
+
+  const faceInstruction = referenceUrl
+    ? "Transform the person in the reference image into the following scene while " +
+      "preserving their exact facial features, face shape, skin tone, and identity. " +
+      "Keep their face recognisable. "
+    : "";
+
+  const finalPrompt = faceInstruction + stylePrefix + prompt;
 
   // Generate image
   const refParam = "referenceParam" in model ? model.referenceParam : undefined;
   const { imageUrl, genError } = await tryGenerateImage(
-    model.id, model.steps, stylePrefix + prompt, referenceUrl, refParam,
+    model.id, model.steps, finalPrompt, referenceUrl, refParam,
   );
   if (genError) return genError;
   if (!imageUrl) return Response.json({ error: "No image returned" }, { status: 500 });

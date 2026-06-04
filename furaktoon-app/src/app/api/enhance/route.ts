@@ -15,11 +15,21 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { prompt, style } = body as { prompt: string; style: "anime" | "cartoon" };
+  const { prompt, style, hasReference } = body as {
+    prompt: string;
+    style: "anime" | "cartoon";
+    hasReference?: boolean;
+  };
 
   if (!prompt || !style) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
+
+  const refInstruction = hasReference
+    ? "A reference face photo will be provided. Describe only the scene, outfit, " +
+      "pose, background, and mood — do NOT describe a face or person appearance " +
+      "since the face comes from the reference photo. "
+    : "";
 
   const res = await together.chat.completions.create({
     model: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -28,7 +38,8 @@ export async function POST(request: Request) {
         role: "system",
         content:
           "You turn a short idea into one vivid image-generation prompt. " +
-          "Keep it under 60 words. Describe subject, style, colors, lighting, mood. " +
+          "Keep it under 60 words. Describe scene, outfit, colors, lighting, mood. " +
+          refInstruction +
           "If style is 'anime', use anime/manga descriptors. If 'cartoon', use clean " +
           "Western cartoon/illustration descriptors. Output ONLY the prompt text.",
       },
