@@ -117,24 +117,34 @@ export async function POST(request: Request) {
       .from("images")
       .upload(fileName, imgBuffer, { contentType: "image/png" });
 
-    if (!uploadError) {
+    if (uploadError) {
+      console.error("[storage upload error]", uploadError);
+    } else {
       const { data: publicData } = serviceSupabase.storage
         .from("images")
         .getPublicUrl(fileName);
       storedUrl = publicData.publicUrl;
     }
-  } catch {
-    // If storage fails, we still return the temporary URL
+  } catch (storageErr) {
+    console.error("[storage exception]", storageErr);
   }
 
   // Save to database
-  await supabase.from("generations").insert({
+  const { error: dbError } = await supabase.from("generations").insert({
     user_id: user.id,
     prompt,
     style,
     model: modelId,
     image_url: storedUrl,
   });
+
+  if (dbError) {
+    console.error("[db insert error]", dbError);
+    return Response.json(
+      { imageUrl: storedUrl, warning: "Image generated but not saved to gallery: " + dbError.message },
+      { status: 200 }
+    );
+  }
 
   return Response.json({ imageUrl: storedUrl });
 }
