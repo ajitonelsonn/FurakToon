@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Generation } from "@/lib/supabase/types";
 import { IMAGE_MODELS } from "@/lib/models";
+import DownloadButton from "@/components/DownloadButton";
 
 export default async function GalleryPage() {
   const supabase = await createClient();
@@ -15,6 +16,8 @@ export default async function GalleryPage() {
     .order("created_at", { ascending: false });
 
   const items = (data ?? []) as Generation[];
+  const plural = items.length === 1 ? "" : "s";
+  const countLabel = items.length === 0 ? "No toons yet" : `${items.length} toon${plural} created`;
 
   return (
     <div className="flex-1 px-4 sm:px-6 py-10 max-w-6xl mx-auto w-full">
@@ -23,9 +26,7 @@ export default async function GalleryPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-extrabold text-navy">My Gallery</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {items.length === 0 ? "No toons yet" : `${items.length} toon${items.length === 1 ? "" : "s"} created`}
-          </p>
+          <p className="text-gray-400 text-sm mt-1">{countLabel}</p>
         </div>
         <Link
           href="/create"
@@ -86,15 +87,7 @@ function GalleryCard({ gen }: Readonly<{ gen: Generation }>) {
         </span>
 
         {/* Download on hover */}
-        <a
-          href={gen.image_url}
-          download="furaktoon.png"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-navy font-bold text-xs px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md active:scale-95"
-        >
-          ↓ Download
-        </a>
+        <DownloadButton imageUrl={gen.image_url} style={gen.style} model={gen.model} />
       </div>
 
       {/* Info */}

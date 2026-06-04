@@ -2,6 +2,7 @@ import Together from "together-ai";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabase } from "@supabase/supabase-js";
 import { IMAGE_MODELS } from "@/lib/models";
+import { pendoTrackServer } from "@/lib/pendo";
 
 const together = new Together();
 
@@ -202,6 +203,12 @@ export async function POST(request: Request) {
   try {
     const moderationErr = await runModerationCheck(prompt);
     if (moderationErr) {
+      await pendoTrackServer("content_moderation_blocked", user.id, {
+        style,
+        modelId,
+        moderationReason: moderationErr.substring(0, 100),
+        promptLength: prompt.length,
+      });
       return Response.json({ error: moderationErr }, { status: 400 });
     }
   } catch {

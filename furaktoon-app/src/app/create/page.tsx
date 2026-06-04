@@ -388,7 +388,16 @@ export default function CreatePage() {
             <button onClick={handleReset} className="flex-1 py-3.5 rounded-2xl border-2 border-navy/20 text-navy font-bold hover:bg-navy/5 transition-all active:scale-95">
               ← Create another
             </button>
-            <a href={imageUrl} download="furaktoon.png" target="_blank" rel="noopener noreferrer"
+            <a
+              href={imageUrl}
+              download="furaktoon.png"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => {
+                if (typeof pendo !== "undefined") {
+                  pendo.track("image_downloaded", { source: "create", style, modelId: selectedModel });
+                }
+              }}
               className="flex-1 py-3.5 rounded-2xl bg-navy hover:bg-[#2a3f8f] text-white font-bold text-center shadow-lg hover:shadow-xl transition-all active:scale-95">
               ↓ Download
             </a>
