@@ -37,33 +37,102 @@ type StepState = {
   wrapCls: string; iconCls: string; labelCls: string; icon: string;
 };
 
+const WRAP_CLS = {
+  failed:  "border-red-300 bg-red-50 scale-[1.02]",
+  active:  "border-sky bg-sky/5 shadow-lg scale-[1.02]",
+  done:    "border-green-200 bg-green-50",
+  pending: "border-gray-100 bg-white opacity-40",
+};
+const ICON_CLS = {
+  failed:  "bg-red-100 text-red-500",
+  active:  "bg-sky text-white shadow-md animate-pulse",
+  done:    "bg-green-100 text-green-600",
+  pending: "bg-gray-100 text-gray-300",
+};
+const LABEL_CLS = {
+  failed:  "text-red-600",
+  active:  "text-navy",
+  done:    "text-green-700",
+  pending: "text-gray-300",
+};
+
 function resolveStepState(i: number, phase: Phase, stepIcon: string): StepState {
-  const current   = stepIndex(phase);
-  const isFailed  = i === 0 && phase === "safety_failed";
-  const isDone    = !isFailed && (i < current || (i === current && (phase === "safety_done" || phase === "enhance_done")));
-  const isActive  = i === current && !isDone && !isFailed;
+  const current  = stepIndex(phase);
+  const isFailed = i === 0 && phase === "safety_failed";
+  const isDone   = !isFailed && (i < current || (i === current && (phase === "safety_done" || phase === "enhance_done")));
+  const isActive = i === current && !isDone && !isFailed;
   const isPending = i > current && !isFailed;
 
-  let wrapCls = "border-gray-100 bg-white opacity-40";
-  if (isFailed)      wrapCls = "border-red-300 bg-red-50 scale-[1.02]";
-  else if (isActive) wrapCls = "border-sky bg-sky/5 shadow-lg scale-[1.02]";
-  else if (isDone)   wrapCls = "border-green-200 bg-green-50";
+  const key = isFailed ? "failed" : isActive ? "active" : isDone ? "done" : "pending";
+  const icon = isFailed ? "✕" : isDone ? "✓" : stepIcon;
 
-  let iconCls = "bg-gray-100 text-gray-300";
-  if (isFailed)      iconCls = "bg-red-100 text-red-500";
-  else if (isActive) iconCls = "bg-sky text-white shadow-md animate-pulse";
-  else if (isDone)   iconCls = "bg-green-100 text-green-600";
+  return {
+    isFailed, isDone, isActive, isPending,
+    wrapCls: WRAP_CLS[key], iconCls: ICON_CLS[key], labelCls: LABEL_CLS[key], icon,
+  };
+}
 
-  let labelCls = "text-gray-300";
-  if (isFailed)      labelCls = "text-red-600";
-  else if (isActive) labelCls = "text-navy";
-  else if (isDone)   labelCls = "text-green-700";
+type Setters = {
+  setPrompt: (v: string) => void;
+  setEnhancing: (v: boolean) => void;
+  setError: (v: string | null) => void;
+  setPhase: (v: Phase) => void;
+  setImageUrl: (v: string | null) => void;
+  setWarning: (v: string | null) => void;
+};
 
-  let icon = stepIcon;
-  if (isFailed) icon = "✕";
-  else if (isDone) icon = "✓";
+async function doEnhance(
+  prompt: string, style: Style, hasReference: boolean, s: Setters,
+) {
+  s.setEnhancing(true);
+  s.setError(null);
+  try {
+    const res = await fetch("/api/enhance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, style, hasReference }),
+    });
+    const data = await res.json();
+    if (data.enhanced) s.setPrompt(data.enhanced);
+    else s.setError(data.error ?? "Enhancement failed");
+  } catch {
+    s.setError("Enhancement failed. Please try again.");
+  } finally {
+    s.setEnhancing(false);
+  }
+}
 
-  return { isFailed, isDone, isActive, isPending, wrapCls, iconCls, labelCls, icon };
+async function doGenerate(
+  prompt: string, style: Style, selectedModel: string,
+  referenceFile: File | null, s: Setters,
+) {
+  s.setError(null);
+  s.setWarning(null);
+  s.setImageUrl(null);
+
+  s.setPhase("safety");
+  const safetyErr = await runSafetyCheck(prompt);
+  if (safetyErr) { s.setError(safetyErr); s.setPhase("safety_failed"); return; }
+
+  s.setPhase("safety_done");
+  await delay(300);
+  s.setPhase("enhance");
+  await delay(800);
+  s.setPhase("enhance_done");
+  await delay(300);
+
+  s.setPhase("painting");
+  const result = await runImageGeneration(prompt, style, selectedModel, referenceFile);
+  if (result.imageUrl) {
+    s.setPhase("finalizing");
+    await delay(600);
+    s.setImageUrl(result.imageUrl);
+    if (result.warning) s.setWarning(result.warning);
+    s.setPhase("done");
+  } else {
+    s.setError(result.error ?? "Generation failed");
+    s.setPhase("error");
+  }
 }
 
 async function runSafetyCheck(prompt: string): Promise<string | null> {
@@ -168,66 +237,28 @@ export default function CreatePage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  async function handleEnhance() {
-    if (!prompt.trim()) return;
-    setEnhancing(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/enhance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, style, hasReference: !!referenceFile }),
-      });
-      const data = await res.json();
-      if (data.enhanced) setPrompt(data.enhanced);
-      else setError(data.error ?? "Enhancement failed");
-    } catch {
-      setError("Enhancement failed. Please try again.");
-    } finally {
-      setEnhancing(false);
-    }
-  }
+  const setters: Setters = {
+    setPrompt, setEnhancing, setError, setPhase, setImageUrl, setWarning,
+  };
 
-  async function handleGenerate() {
-    if (!prompt.trim()) return;
-    setError(null);
-    setWarning(null);
-    setImageUrl(null);
+  const handleEnhance = () => {
+    if (prompt.trim()) doEnhance(prompt, style, !!referenceFile, setters);
+  };
 
-    setPhase("safety");
-    const safetyErr = await runSafetyCheck(prompt);
-    if (safetyErr) {
-      setError(safetyErr);
-      setPhase("safety_failed");
-      return;
-    }
-
-    setPhase("safety_done");
-    await delay(300);
-    setPhase("enhance");
-    await delay(800);
-    setPhase("enhance_done");
-    await delay(300);
-
-    setPhase("painting");
-    const result = await runImageGeneration(prompt, style, selectedModel, referenceFile);
-    if (result.imageUrl) {
-      setPhase("finalizing");
-      await delay(600);
-      setImageUrl(result.imageUrl);
-      if (result.warning) setWarning(result.warning);
-      setPhase("done");
-    } else {
-      setError(result.error ?? "Generation failed");
-      setPhase("error");
-    }
-  }
+  const handleGenerate = () => {
+    if (prompt.trim()) doGenerate(prompt, style, selectedModel, referenceFile, setters);
+  };
 
   function handleReset() {
     setPhase("idle");
     setImageUrl(null);
     setError(null);
     setWarning(null);
+    setPrompt("");
+    setReferenceFile(null);
+    setReferencePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setSelectedModel(IMAGE_MODELS[0].id);
   }
 
   /* ── GENERATING VIEW ── */
