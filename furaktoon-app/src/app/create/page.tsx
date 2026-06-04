@@ -121,7 +121,7 @@ export default function CreatePage() {
   const [enhancing, setEnhancing]       = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
 
-  const isGenerating = phase !== "idle" && phase !== "done" && phase !== "error" && phase !== "safety_failed";
+  const isGenerating = phase !== "idle" && phase !== "done" && phase !== "error";
 
   // Scroll to result when done
   useEffect(() => {
@@ -195,15 +195,52 @@ export default function CreatePage() {
     setWarning(null);
   }
 
-  /* ── GENERATING VIEW ── */
+  /* ── GENERATING VIEW (includes safety_failed) ── */
   if (isGenerating) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 min-h-[60vh]">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 min-h-[60vh] relative">
+
+        {/* Safety blocked modal */}
+        {phase === "safety_failed" && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
+
+            {/* Modal card */}
+            <div className="relative bg-white rounded-3xl shadow-2xl border border-red-100 p-8 max-w-sm w-full text-center animate-[fadeIn_0.2s_ease-out]">
+              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🚫</div>
+              <h2 className="text-xl font-extrabold text-navy mb-2">Prompt Not Allowed</h2>
+              <p className="text-sm text-gray-500 leading-relaxed mb-6">{error}</p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleReset}
+                  className="flex-1 py-3 rounded-2xl border-2 border-navy/20 text-navy font-bold text-sm hover:bg-navy/5 transition-all active:scale-95"
+                >
+                  ← Go back
+                </button>
+                <button
+                  onClick={() => {
+                    setPhase("idle");
+                    setError(null);
+                    setPrompt("");
+                  }}
+                  className="flex-1 py-3 rounded-2xl bg-sky text-white font-bold text-sm hover:bg-[#3a9fd6] shadow-md transition-all active:scale-95"
+                >
+                  Try new prompt
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="w-full max-w-sm space-y-10">
 
           {/* Title */}
           <div className="text-center">
-            <p className="text-xs font-bold text-navy/40 uppercase tracking-widest mb-2">Creating your toon</p>
+            <p className="text-xs font-bold text-navy/40 uppercase tracking-widest mb-2">
+              {phase === "safety_failed" ? "Safety check failed" : "Creating your toon"}
+            </p>
             <p className="text-sm text-gray-400 truncate max-w-xs mx-auto">&ldquo;{prompt}&rdquo;</p>
           </div>
 
