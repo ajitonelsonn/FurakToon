@@ -10,7 +10,6 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    // Fetch last 6 generations for the dashboard preview
     const { data } = await supabase
       .from("generations")
       .select("*")
@@ -18,105 +17,92 @@ export default async function HomePage() {
       .order("created_at", { ascending: false })
       .limit(6);
 
-    const recent = (data ?? []) as Generation[];
-    return <LoggedInHome email={user.email ?? ""} recent={recent} />;
+    return <LoggedInHome email={user.email ?? ""} recent={(data ?? []) as Generation[]} />;
   }
 
   return <MarketingHome />;
 }
 
-/* ── Logged-in dashboard view ── */
-function LoggedInHome({ email, recent }: { email: string; recent: Generation[] }) {
-  const firstName = email.split("@")[0];
+/* ── Logged-in dashboard ── */
+function LoggedInHome({ email, recent }: Readonly<{ email: string; recent: Generation[] }>) {
+  const name = email.split("@")[0];
 
   return (
-    <div className="flex-1 px-4 py-10 max-w-5xl mx-auto w-full space-y-10">
+    <div className="flex-1 px-4 sm:px-6 py-10 max-w-6xl mx-auto w-full space-y-8">
+
       {/* Welcome banner */}
-      <div className="bg-linear-to-r from-fuchsia-500 to-violet-500 rounded-3xl p-7 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg">
-        <div className="text-white text-center sm:text-left">
-          <p className="text-sm font-medium opacity-80">Welcome back 👋</p>
-          <h1 className="text-2xl sm:text-3xl font-extrabold mt-1">{firstName}</h1>
-          <p className="text-sm opacity-70 mt-1">Ready to create something beautiful?</p>
+      <div className="relative overflow-hidden rounded-3xl bg-navy p-7 sm:p-9 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-sky/10 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+        <div className="absolute bottom-0 left-20 w-40 h-40 bg-orange/10 rounded-full translate-y-1/2 pointer-events-none" />
+
+        <div className="relative text-white text-center sm:text-left">
+          <p className="text-sm font-medium text-sky">Welcome back 👋</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold mt-1 capitalize">{name}</h1>
+          <p className="text-sm text-white/60 mt-1">What beautiful toon will you create today?</p>
         </div>
+
         <Link
           href="/create"
-          className="shrink-0 bg-white text-fuchsia-600 hover:bg-fuchsia-50 font-bold px-7 py-3 rounded-2xl shadow-md active:scale-95 transition-all duration-150 text-base"
+          className="relative shrink-0 bg-sky hover:bg-[#3a9fd6] text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all duration-150 text-base glow-sky"
         >
           ✨ Create new toon
         </Link>
       </div>
 
-      {/* Quick action cards */}
+      {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link
-          href="/create"
-          className="bg-white rounded-3xl shadow-md hover:shadow-lg p-6 flex items-center gap-4 transition-all group"
-        >
-          <span className="text-4xl">🎨</span>
+        <Link href="/create" className="group bg-white border-2 border-transparent hover:border-sky/40 rounded-3xl shadow-md hover:shadow-xl p-6 flex items-center gap-5 transition-all duration-200">
+          <div className="w-14 h-14 rounded-2xl bg-sky/10 flex items-center justify-center text-3xl shrink-0 group-hover:scale-110 transition-transform">🎨</div>
           <div>
-            <h2 className="font-bold text-gray-800 text-base group-hover:text-fuchsia-600 transition-colors">
-              Generate
-            </h2>
-            <p className="text-sm text-gray-400">Turn your idea into anime or cartoon art</p>
+            <h2 className="font-bold text-navy text-base">Generate</h2>
+            <p className="text-sm text-gray-400 mt-0.5">Turn your idea into anime or cartoon art</p>
           </div>
+          <span className="ml-auto text-gray-300 group-hover:text-sky transition-colors text-xl">→</span>
         </Link>
-        <Link
-          href="/gallery"
-          className="bg-white rounded-3xl shadow-md hover:shadow-lg p-6 flex items-center gap-4 transition-all group"
-        >
-          <span className="text-4xl">🖼️</span>
+
+        <Link href="/gallery" className="group bg-white border-2 border-transparent hover:border-orange/40 rounded-3xl shadow-md hover:shadow-xl p-6 flex items-center gap-5 transition-all duration-200">
+          <div className="w-14 h-14 rounded-2xl bg-orange/10 flex items-center justify-center text-3xl shrink-0 group-hover:scale-110 transition-transform">🖼️</div>
           <div>
-            <h2 className="font-bold text-gray-800 text-base group-hover:text-fuchsia-600 transition-colors">
-              My Gallery
-            </h2>
-            <p className="text-sm text-gray-400">Browse all your past creations</p>
+            <h2 className="font-bold text-navy text-base">My Gallery</h2>
+            <p className="text-sm text-gray-400 mt-0.5">Browse all your past creations</p>
           </div>
+          <span className="ml-auto text-gray-300 group-hover:text-orange transition-colors text-xl">→</span>
         </Link>
       </div>
 
       {/* Recent creations */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-800">Recent creations</h2>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-extrabold text-navy">Recent creations</h2>
           {recent.length > 0 && (
-            <Link href="/gallery" className="text-sm text-fuchsia-600 hover:underline font-medium">
+            <Link href="/gallery" className="text-sm text-sky hover:underline font-semibold">
               View all →
             </Link>
           )}
         </div>
 
         {recent.length === 0 ? (
-          <div className="bg-white rounded-3xl shadow-md p-12 text-center text-gray-400">
-            <p className="text-4xl mb-3">🌟</p>
-            <p className="font-medium">No creations yet</p>
-            <p className="text-sm mt-1">Hit Generate above to make your first toon!</p>
+          <div className="bg-white rounded-3xl border-2 border-dashed border-sky/30 p-14 text-center">
+            <div className="text-5xl mb-3 float inline-block">🌟</div>
+            <p className="font-bold text-navy text-lg mt-2">No creations yet</p>
+            <p className="text-sm text-gray-400 mt-1 mb-5">Hit Generate above to make your first toon!</p>
+            <Link href="/create" className="inline-flex items-center gap-2 bg-navy text-white font-bold px-6 py-3 rounded-2xl hover:bg-[#2a3f8f] transition-all active:scale-95 shadow-md">
+              ✨ Make your first toon
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {recent.map((gen) => (
-              <div
-                key={gen.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow group"
-              >
-                <div className="relative aspect-square">
-                  <Image
-                    src={gen.image_url}
-                    alt={gen.prompt}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    unoptimized
-                  />
-                  <span
-                    className={`absolute top-2 left-2 text-xs font-semibold px-2 py-0.5 rounded-full shadow ${
-                      gen.style === "anime"
-                        ? "bg-fuchsia-500 text-white"
-                        : "bg-violet-500 text-white"
-                    }`}
-                  >
+              <div key={gen.id} className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-200 border border-gray-100 hover:border-sky/30">
+                <div className="relative aspect-square overflow-hidden">
+                  <Image src={gen.image_url} alt={gen.prompt} fill className="object-cover group-hover:scale-105 transition-transform duration-300" unoptimized />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span className={`absolute top-2 left-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-md ${gen.style === "anime" ? "bg-sky text-white" : "bg-orange text-white"}`}>
                     {gen.style}
                   </span>
                 </div>
-                <p className="p-2 text-xs text-gray-500 truncate">{gen.prompt}</p>
+                <p className="px-3 py-2 text-xs text-gray-500 truncate font-medium">{gen.prompt}</p>
               </div>
             ))}
           </div>
@@ -126,73 +112,97 @@ function LoggedInHome({ email, recent }: { email: string; recent: Generation[] }
   );
 }
 
-/* ── Marketing / logged-out view ── */
+/* ── Marketing / logged-out ── */
 function MarketingHome() {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-20 text-center">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="flex justify-center">
+    <div className="flex-1 flex flex-col">
+      {/* Hero */}
+      <section className="relative flex flex-col items-center justify-center text-center px-4 pt-16 pb-20 overflow-hidden">
+        {/* Background blobs */}
+        <div className="absolute top-10 left-1/4 w-72 h-72 bg-sky/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-56 h-56 bg-orange/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-3xl mx-auto space-y-6">
           <Image
             src="/logo-with-text.png"
-            alt="FurakToon — Beautiful AI Cartoons"
-            width={280}
-            height={280}
-            className="w-56 sm:w-64 h-auto"
+            alt="FurakToon"
+            width={220}
+            height={220}
+            className="w-44 sm:w-52 h-auto mx-auto float"
             priority
           />
+
+          <div className="inline-flex items-center gap-2 bg-sky/10 border border-sky/30 text-navy text-xs font-bold px-4 py-1.5 rounded-full">
+            ✨ Powered by Together AI
+          </div>
+
+          <h1 className="text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight text-ink">
+            Beautiful{" "}
+            <span className="relative inline-block">
+              <span className="relative z-10 text-sky">cartoons</span>
+              <span className="absolute -bottom-1 left-0 w-full h-3 bg-orange/20 rounded-full -z-0" />
+            </span>
+            ,<br />
+            made by you.
+          </h1>
+
+          <p className="text-lg text-gray-500 max-w-md mx-auto leading-relaxed">
+            Type an idea, pick a style, and let AI bring your anime or cartoon character to life in seconds.
+          </p>
+
+          <p className="text-xs text-gray-400">
+            <em>furak</em> means &ldquo;beautiful&rdquo; in Tetum 🇹🇱
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Link
+              href="/auth/register"
+              className="inline-flex items-center justify-center gap-2 bg-navy hover:bg-[#2a3f8f] text-white font-bold text-base px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl active:scale-95 transition-all duration-150"
+            >
+              Start creating for free →
+            </Link>
+            <Link
+              href="/auth/login"
+              className="inline-flex items-center justify-center bg-white border-2 border-navy/20 hover:border-sky/60 text-navy font-bold text-base px-8 py-4 rounded-2xl hover:bg-sky/5 transition-all duration-150"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
+      </section>
 
-        <div className="inline-flex items-center gap-2 bg-fuchsia-50 border border-fuchsia-100 text-fuchsia-600 text-xs font-semibold px-4 py-1.5 rounded-full">
-          ✨ Powered by Together AI
+      {/* Feature strip */}
+      <section className="bg-navy py-14 px-4">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[
+            { icon: "🎌", title: "Anime & Cartoon", desc: "One-tap toggle between Anime and Cartoon styles.", color: "bg-sky/20" },
+            { icon: "⚡", title: "Fast AI Models", desc: "Flux Fast & Stable Diffusion XL — results in seconds.", color: "bg-orange/20" },
+            { icon: "🛡️", title: "Safety First", desc: "Every prompt is checked before generation.", color: "bg-white/10" },
+          ].map((f) => (
+            <div key={f.title} className="flex items-start gap-4 p-6 rounded-3xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+              <div className={`w-12 h-12 rounded-2xl ${f.color} flex items-center justify-center text-2xl shrink-0`}>{f.icon}</div>
+              <div>
+                <h3 className="font-bold text-white text-base">{f.title}</h3>
+                <p className="text-sm text-white/50 mt-1">{f.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
+      </section>
 
-        <h1 className="text-5xl sm:text-6xl font-extrabold leading-tight tracking-tight text-gray-900">
-          Beautiful{" "}
-          <span className="text-transparent bg-clip-text bg-linear-to-r from-fuchsia-500 to-violet-500">
-            cartoons
-          </span>
-          ,<br />
-          made by you.
-        </h1>
-
-        <p className="text-lg text-gray-500 max-w-md mx-auto leading-relaxed">
-          Type an idea, pick a style, and let AI bring your anime or cartoon character to life in seconds.
-        </p>
-
-        <p className="text-xs text-gray-400">
-          <em>furak</em> means &ldquo;beautiful&rdquo; in Tetum 🇹🇱
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+      {/* CTA bottom */}
+      <section className="py-16 px-4 text-center bg-cream">
+        <div className="max-w-lg mx-auto space-y-5">
+          <h2 className="text-3xl font-extrabold text-navy">Ready to create?</h2>
+          <p className="text-gray-400">Join and start generating beautiful toons for free.</p>
           <Link
             href="/auth/register"
-            className="inline-flex items-center justify-center gap-2 bg-linear-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600 text-white font-bold text-base px-8 py-4 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-150"
+            className="inline-flex items-center gap-2 bg-sky hover:bg-[#3a9fd6] text-white font-bold px-8 py-4 rounded-2xl shadow-lg active:scale-95 transition-all glow-sky"
           >
-            Start creating for free →
-          </Link>
-          <Link
-            href="/auth/login"
-            className="inline-flex items-center justify-center bg-white border border-gray-200 hover:border-gray-300 text-gray-700 font-semibold text-base px-8 py-4 rounded-2xl hover:bg-gray-50 transition-all duration-150"
-          >
-            Sign in
+            Get started — it&apos;s free ✨
           </Link>
         </div>
-      </div>
-
-      {/* Feature cards */}
-      <div className="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl mx-auto w-full">
-        {[
-          { icon: "🎌", title: "Anime & Cartoon", desc: "Switch between Anime and Cartoon styles with a single toggle." },
-          { icon: "⚡", title: "2 AI Models", desc: "Choose from Flux Fast and Stable Diffusion XL." },
-          { icon: "🛡️", title: "Safety First", desc: "Every prompt is checked before generation so the app stays safe." },
-        ].map((f) => (
-          <div key={f.title} className="bg-white rounded-3xl shadow-md p-6 text-left hover:shadow-lg transition-shadow">
-            <div className="text-3xl mb-3">{f.icon}</div>
-            <h3 className="font-bold text-gray-800 text-base mb-1">{f.title}</h3>
-            <p className="text-sm text-gray-400">{f.desc}</p>
-          </div>
-        ))}
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,61 +1,72 @@
 import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Generation } from "@/lib/supabase/types";
 import { IMAGE_MODELS } from "@/lib/models";
 
 export default async function GalleryPage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: generations } = await supabase
+  const { data } = await supabase
     .from("generations")
     .select("*")
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const items = (generations ?? []) as Generation[];
+  const items = (data ?? []) as Generation[];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Your Gallery</h1>
-        <p className="text-gray-400 text-sm mt-1">
-          All {items.length} of your generated toons
-        </p>
+    <div className="flex-1 px-4 sm:px-6 py-10 max-w-6xl mx-auto w-full">
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-extrabold text-navy">My Gallery</h1>
+          <p className="text-gray-400 text-sm mt-1">
+            {items.length === 0 ? "No toons yet" : `${items.length} toon${items.length === 1 ? "" : "s"} created`}
+          </p>
+        </div>
+        <Link
+          href="/create"
+          className="flex items-center gap-2 bg-navy hover:bg-[#2a3f8f] text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-150 text-sm"
+        >
+          ✨ Create new
+        </Link>
       </div>
 
       {items.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
-          <p className="text-5xl mb-4">🎨</p>
-          <p className="text-lg font-medium">No toons yet!</p>
-          <p className="text-sm mt-1">Head to Create to generate your first one.</p>
+        /* Empty state */
+        <div className="bg-white rounded-3xl border-2 border-dashed border-sky/30 p-16 text-center">
+          <div className="text-5xl mb-4 float inline-block">🎨</div>
+          <p className="font-extrabold text-navy text-xl mt-2">Your gallery is empty</p>
+          <p className="text-sm text-gray-400 mt-2 mb-6">Create your first toon and it will appear here</p>
+          <Link
+            href="/create"
+            className="inline-flex items-center gap-2 bg-sky hover:bg-[#3a9fd6] text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all glow-sky"
+          >
+            ✨ Make your first toon
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((gen) => (
-            <GalleryCard key={gen.id} gen={gen} />
-          ))}
+          {items.map((gen) => <GalleryCard key={gen.id} gen={gen} />)}
         </div>
       )}
     </div>
   );
 }
 
-function GalleryCard({ gen }: { gen: Generation }) {
-  const modelName =
-    IMAGE_MODELS.find((m) => m.id === gen.model)?.name ?? gen.model;
-
+function GalleryCard({ gen }: Readonly<{ gen: Generation }>) {
+  const modelName = IMAGE_MODELS.find((m) => m.id === gen.model)?.name ?? gen.model;
   const date = new Date(gen.created_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+    month: "short", day: "numeric", year: "numeric",
   });
 
   return (
-    <div className="bg-white rounded-3xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-200 group">
+    <div className="group bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-100 hover:border-sky/20">
+
+      {/* Image */}
       <div className="relative aspect-square overflow-hidden">
         <Image
           src={gen.image_url}
@@ -64,34 +75,35 @@ function GalleryCard({ gen }: { gen: Generation }) {
           className="object-cover group-hover:scale-105 transition-transform duration-300"
           unoptimized
         />
-        <div className="absolute top-2 right-2 flex gap-1">
-          <span
-            className={`text-xs font-semibold px-2 py-1 rounded-full shadow ${
-              gen.style === "anime"
-                ? "bg-fuchsia-500 text-white"
-                : "bg-violet-500 text-white"
-            }`}
-          >
-            {gen.style}
-          </span>
-        </div>
-      </div>
+        {/* Overlay on hover */}
+        <div className="absolute inset-0 bg-linear-to-t from-navy/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
-      <div className="p-4 space-y-1">
-        <p className="text-sm text-gray-700 font-medium line-clamp-2">{gen.prompt}</p>
-        <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
-          <span>{modelName}</span>
-          <span>{date}</span>
-        </div>
+        {/* Style badge */}
+        <span className={`absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full shadow-md ${
+          gen.style === "anime" ? "bg-sky text-white" : "bg-orange text-white"
+        }`}>
+          {gen.style === "anime" ? "🎌 Anime" : "🎨 Cartoon"}
+        </span>
+
+        {/* Download on hover */}
         <a
           href={gen.image_url}
           download="furaktoon.png"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 block text-center text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-2 rounded-xl transition"
+          className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-navy font-bold text-xs px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md active:scale-95"
         >
           ↓ Download
         </a>
+      </div>
+
+      {/* Info */}
+      <div className="p-4 space-y-2">
+        <p className="text-sm text-ink font-semibold line-clamp-2 leading-snug">{gen.prompt}</p>
+        <div className="flex items-center justify-between text-xs text-gray-400 pt-1 border-t border-gray-50">
+          <span className="bg-navy/5 text-navy font-semibold px-2.5 py-1 rounded-lg">{modelName}</span>
+          <span>{date}</span>
+        </div>
       </div>
     </div>
   );

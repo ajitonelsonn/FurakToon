@@ -6,45 +6,58 @@ import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import type { User } from "@supabase/supabase-js";
 
-export default function Navbar({ user }: { user: User | null }) {
+export default function Navbar({ user }: Readonly<{ user: User | null }>) {
   const pathname = usePathname();
 
-  const navLink = (href: string, label: string) => (
-    <Link
-      href={href}
-      className={`text-sm font-medium transition-colors ${
-        pathname === href
-          ? "text-fuchsia-600"
-          : "text-gray-500 hover:text-gray-800"
-      }`}
-    >
-      {label}
-    </Link>
-  );
+  const isActive = (href: string) => pathname === href;
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center">
+    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-navy/10 shadow-sm">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image
-            src="/logo-with-text.png"
+            src="/logo-no-text.png"
             alt="FurakToon"
-            width={120}
-            height={40}
-            className="h-9 w-auto object-contain"
+            width={38}
+            height={38}
+            className="h-9 w-9 object-contain"
             priority
           />
+          <span className="font-extrabold text-xl tracking-tight text-navy">
+            Furak<span className="text-sky">Toon</span>
+          </span>
         </Link>
 
-        <div className="flex items-center gap-5">
+        {/* Nav links */}
+        <div className="flex items-center gap-1 sm:gap-2">
           {user ? (
             <>
-              {navLink("/create", "Create")}
-              {navLink("/gallery", "Gallery")}
-              <form action={logout}>
+              <Link
+                href="/create"
+                className={`flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-150 ${
+                  isActive("/create")
+                    ? "bg-sky/10 text-navy"
+                    : "text-gray-500 hover:text-navy hover:bg-gray-100"
+                }`}
+              >
+                <span>✨</span> Create
+              </Link>
+              <Link
+                href="/gallery"
+                className={`flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-150 ${
+                  isActive("/gallery")
+                    ? "bg-sky/10 text-navy"
+                    : "text-gray-500 hover:text-navy hover:bg-gray-100"
+                }`}
+              >
+                <span>🖼️</span> Gallery
+              </Link>
+              <form action={logout} className="ml-1">
                 <button
                   type="submit"
-                  className="text-sm text-gray-400 hover:text-gray-700 transition-colors"
+                  className="text-sm text-gray-400 hover:text-red-400 px-3 py-2 rounded-xl hover:bg-red-50 transition-all duration-150 font-medium"
                 >
                   Sign out
                 </button>
@@ -52,10 +65,15 @@ export default function Navbar({ user }: { user: User | null }) {
             </>
           ) : (
             <>
-              {navLink("/auth/login", "Sign in")}
+              <Link
+                href="/auth/login"
+                className="text-sm font-semibold text-gray-500 hover:text-navy px-4 py-2 rounded-xl hover:bg-gray-100 transition-all"
+              >
+                Sign in
+              </Link>
               <Link
                 href="/auth/register"
-                className="text-sm font-semibold bg-fuchsia-500 hover:bg-fuchsia-600 text-white px-4 py-2 rounded-xl transition-colors"
+                className="text-sm font-bold bg-navy hover:bg-[#2a3f8f] text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
               >
                 Get started
               </Link>

@@ -14,6 +14,7 @@ export default function CreatePage() {
   const [loading, setLoading] = useState(false);
   const [enhancing, setEnhancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   async function handleEnhance() {
     if (!prompt.trim()) return;
@@ -39,6 +40,7 @@ export default function CreatePage() {
     if (!prompt.trim()) return;
     setLoading(true);
     setError(null);
+    setWarning(null);
     setImageUrl(null);
     try {
       const res = await fetch("/api/generate", {
@@ -47,8 +49,12 @@ export default function CreatePage() {
         body: JSON.stringify({ prompt, style, modelId: selectedModel }),
       });
       const data = await res.json();
-      if (data.imageUrl) setImageUrl(data.imageUrl);
-      else setError(data.error ?? "Generation failed");
+      if (data.imageUrl) {
+        setImageUrl(data.imageUrl);
+        if (data.warning) setWarning(data.warning);
+      } else {
+        setError(data.error ?? "Generation failed");
+      }
     } catch {
       setError("Generation failed. Please try again.");
     } finally {
@@ -57,153 +63,148 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800">Create Your Toon</h1>
-        <p className="text-gray-400 text-sm mt-1">Describe your idea and watch it come to life</p>
+    <div className="flex-1 px-4 sm:px-6 py-10 max-w-2xl mx-auto w-full">
+
+      {/* Header */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-extrabold text-navy">Create Your Toon</h1>
+        <p className="text-gray-400 text-sm mt-1.5">Describe your idea and watch it come to life ✨</p>
       </div>
 
-      {/* Style Toggle */}
-      <div className="flex items-center justify-center gap-2">
-        <span className="text-sm text-gray-500 font-medium">Style:</span>
-        <div className="relative flex bg-gray-100 rounded-full p-1">
-          {(["anime", "cartoon"] as Style[]).map((s) => {
-            let activeClass = "text-gray-500 hover:text-gray-700";
-            if (style === s) {
-              activeClass = s === "anime"
-                ? "bg-fuchsia-500 text-white shadow-md"
-                : "bg-violet-500 text-white shadow-md";
-            }
-            return (
-              <button
-                key={s}
-                onClick={() => setStyle(s)}
-                className={`relative px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 capitalize ${activeClass}`}
-              >
-                {s === "anime" ? "✨ Anime" : "🎨 Cartoon"}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Prompt Input */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Your prompt</label>
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your character or scene… e.g. 'a fox warrior standing in a glowing forest'"
-          rows={4}
-          className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-fuchsia-400 transition text-sm"
-        />
-        <button
-          onClick={handleEnhance}
-          disabled={enhancing || !prompt.trim()}
-          className="text-xs text-fuchsia-600 hover:text-fuchsia-800 font-medium disabled:opacity-40 flex items-center gap-1"
-        >
-          {enhancing ? (
-            <>
-              <span className="animate-spin">✦</span> Enhancing…
-            </>
-          ) : (
-            "✦ Enhance my prompt with AI"
-          )}
-        </button>
-      </div>
-
-      {/* Model Picker */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Model</label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {IMAGE_MODELS.map((m) => (
-            <button
-              key={m.id}
-              onClick={() => setSelectedModel(m.id)}
-              className={`text-left rounded-2xl border-2 p-3 transition-all duration-150 ${
-                selectedModel === m.id
-                  ? "border-fuchsia-400 bg-fuchsia-50"
-                  : "border-gray-100 bg-white hover:border-gray-200"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm text-gray-800">{m.name}</span>
-                {"default" in m && m.default && (
-                  <span className="text-xs bg-fuchsia-100 text-fuchsia-600 px-2 py-0.5 rounded-full font-medium">
-                    Default
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-400 mt-0.5">{m.description}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Generate Button */}
-      <button
-        onClick={handleGenerate}
-        disabled={loading || !prompt.trim()}
-        className={`w-full py-4 rounded-2xl font-bold text-white text-lg transition-all duration-150 shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-          style === "anime"
-            ? "bg-linear-to-r from-fuchsia-500 to-pink-500 hover:from-fuchsia-600 hover:to-pink-600"
-            : "bg-linear-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
-        }`}
-      >
-        {loading ? (
-          <span className="flex items-center justify-center gap-2">
-            <LoadingDots />
-            Generating your toon…
-          </span>
-        ) : (
-          "✨ Generate"
-        )}
-      </button>
-
-      {/* Error */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Result */}
-      {imageUrl && (
-        <div className="rounded-3xl overflow-hidden shadow-2xl border border-gray-100 bg-white">
-          <Image
-            src={imageUrl}
-            alt="Generated toon"
-            width={1024}
-            height={1024}
-            className="w-full h-auto"
-            unoptimized
-          />
-          <div className="p-4 flex justify-between items-center">
-            <p className="text-xs text-gray-400 truncate max-w-xs">{prompt}</p>
-            <a
-              href={imageUrl}
-              download="furaktoon.png"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-xl transition"
-            >
-              ↓ Download
-            </a>
+      <div className="space-y-5">
+        {/* Style Toggle */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+          <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">Style</p>
+          <div className="grid grid-cols-2 gap-3">
+            {(["anime", "cartoon"] as Style[]).map((s) => {
+              const active = style === s;
+              let activeClass = "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200";
+              if (active) {
+                activeClass = s === "anime"
+                  ? "border-sky bg-sky/10 text-navy shadow-md"
+                  : "border-orange bg-orange/10 text-navy shadow-md";
+              }
+              return (
+                <button
+                  key={s}
+                  onClick={() => setStyle(s)}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-2xl border-2 font-bold text-sm transition-all duration-150 ${activeClass}`}
+                >
+                  {s === "anime" ? "🎌 Anime" : "🎨 Cartoon"}
+                  {active && <span className="w-2 h-2 rounded-full bg-current opacity-60" />}
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
+
+        {/* Prompt */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+          <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">Your Prompt</p>
+          <textarea
+            id="prompt"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="e.g. 'a fox warrior standing in a glowing enchanted forest at night'"
+            rows={4}
+            className="w-full border-2 border-gray-100 hover:border-sky/30 focus:border-sky rounded-2xl px-4 py-3 text-ink text-sm resize-none focus:outline-none transition-colors bg-cream/50"
+          />
+          <button
+            onClick={handleEnhance}
+            disabled={enhancing || !prompt.trim()}
+            className="mt-2 flex items-center gap-1.5 text-xs text-sky hover:text-navy font-bold disabled:opacity-30 transition-colors"
+          >
+            <span className={enhancing ? "animate-spin" : ""}>✦</span>
+            {enhancing ? "Enhancing with AI…" : "Enhance my prompt with AI"}
+          </button>
+        </div>
+
+        {/* Model Picker */}
+        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+          <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">AI Model</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {IMAGE_MODELS.map((m) => {
+              const active = selectedModel === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedModel(m.id)}
+                  className={`text-left rounded-2xl border-2 p-4 transition-all duration-150 ${
+                    active ? "border-navy bg-navy/5 shadow-md" : "border-gray-100 hover:border-navy/20 bg-gray-50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`font-bold text-sm ${active ? "text-navy" : "text-gray-600"}`}>{m.name}</span>
+                    {"default" in m && m.default && (
+                      <span className="text-xs bg-sky/20 text-sky font-bold px-2 py-0.5 rounded-full">Default</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400">{m.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Generate Button */}
+        <button
+          onClick={handleGenerate}
+          disabled={loading || !prompt.trim()}
+          className={`w-full py-4 rounded-2xl font-extrabold text-white text-lg shadow-xl hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 ${
+            style === "anime"
+              ? "bg-sky hover:bg-[#3a9fd6] glow-sky"
+              : "bg-orange hover:bg-[#d97316] glow-orange"
+          }`}
+        >
+          {loading ? <LoadingDots /> : "✨ Generate Toon"}
+        </button>
+
+        {/* Warning */}
+        {warning && (
+          <div className="bg-orange/10 border border-orange/30 text-orange rounded-2xl p-4 text-sm font-medium">
+            ⚠️ {warning}
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 text-sm font-medium">
+            {error}
+          </div>
+        )}
+
+        {/* Result */}
+        {imageUrl && (
+          <div className="rounded-3xl overflow-hidden shadow-2xl border border-navy/10 bg-white">
+            <Image src={imageUrl} alt="Generated toon" width={1024} height={1024} className="w-full h-auto" unoptimized />
+            <div className="p-4 flex items-center justify-between gap-3">
+              <p className="text-xs text-gray-400 truncate">{prompt}</p>
+              <a
+                href={imageUrl}
+                download="furaktoon.png"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 text-sm bg-navy hover:bg-[#2a3f8f] text-white font-bold px-5 py-2.5 rounded-xl shadow transition-all active:scale-95"
+              >
+                ↓ Download
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function LoadingDots() {
   return (
-    <span className="flex gap-1 items-center">
+    <span className="flex items-center justify-center gap-1.5">
+      <span className="text-sm mr-1">Generating your toon</span>
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-2 h-2 bg-white rounded-full animate-bounce"
-          style={{ animationDelay: `${i * 0.15}s` }}
+          className="w-2 h-2 bg-white rounded-full bounce-dot"
+          style={{ animationDelay: `${i * 0.2}s` }}
         />
       ))}
     </span>
