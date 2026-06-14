@@ -25,8 +25,8 @@ export default function DbStatusBadge() {
     }
 
     check();
-    // Re-check periodically so a resume is picked up without a reload.
-    const id = setInterval(check, 30000);
+    // Re-check every 5 minutes so a resume is picked up without a reload.
+    const id = setInterval(check, 5 * 60 * 1000);
     return () => {
       active = false;
       clearInterval(id);
