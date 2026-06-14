@@ -7,6 +7,7 @@ import { logout } from "@/app/actions/auth";
 import { useT } from "@/lib/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
+import CreditBadge from "@/components/CreditBadge";
 import type { User } from "@supabase/supabase-js";
 
 export default function Navbar({ user }: Readonly<{ user: User | null }>) {
@@ -58,6 +59,7 @@ export default function Navbar({ user }: Readonly<{ user: User | null }>) {
               >
                 <span>🖼️</span> {t("nav.gallery")}
               </Link>
+              <CreditBadge />
               <ThemeToggle />
               <LanguageSwitcher />
               <form action={logout} className="ml-1">

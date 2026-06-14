@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabase } from "@supabase/supabase-js";
 import { IMAGE_MODELS } from "@/lib/models";
 import { pendoTrackServer } from "@/lib/pendo";
+import { creditCost } from "@/lib/credits";
+import { spendCredits, refundCredits } from "@/lib/credits.server";
 
 const together = new Together();
 
@@ -162,10 +164,10 @@ async function tryGenerateImage(
 type SaveParams = {
   supabase: Awaited<ReturnType<typeof createClient>>;
   userId: string; prompt: string; style: string; modelId: string;
-  imageUrl: string;
+  imageUrl: string; creditsRemaining: number;
 };
 
-async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageUrl }: SaveParams) {
+async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageUrl, creditsRemaining }: SaveParams) {
   const isDataUrl = imageUrl.startsWith("data:");
   const storedUrl = await storeGeneratedImage(
     isDataUrl ? { b64: imageUrl.split(",")[1] } : { url: imageUrl },
@@ -176,9 +178,9 @@ async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageU
   });
   if (dbError) {
     console.error("[db insert error]", dbError);
-    return Response.json({ imageUrl: storedUrl, warning: "Image generated but not saved to gallery: " + dbError.message });
+    return Response.json({ imageUrl: storedUrl, creditsRemaining, warning: "Image generated but not saved to gallery: " + dbError.message });
   }
-  return Response.json({ imageUrl: storedUrl });
+  return Response.json({ imageUrl: storedUrl, creditsRemaining });
 }
 
 export async function POST(request: Request) {
@@ -217,7 +219,26 @@ export async function POST(request: Request) {
 
   // Upload reference image only if model supports it
   const effectiveRefFile = model.supportsReferenceImage ? refFile : null;
-  const referenceUrl = effectiveRefFile && effectiveRefFile.size > 0
+  const usesReference = !!(effectiveRefFile && effectiveRefFile.size > 0);
+
+  // Charge credits up front (1 normal, 2 with a reference image). Refunded
+  // below if generation fails.
+  const cost = creditCost(usesReference);
+  let newBalance: number;
+  try {
+    newBalance = await spendCredits(cost);
+  } catch {
+    return Response.json({ error: "Could not check your credits. Please try again." }, { status: 500 });
+  }
+  if (newBalance < 0) {
+    await pendoTrackServer("generation_blocked_no_credits", user.id, { style, modelId, cost });
+    return Response.json(
+      { error: "out_of_credits", cost },
+      { status: 402 },
+    );
+  }
+
+  const referenceUrl = usesReference
     ? await uploadReferenceImage(effectiveRefFile, user.id)
     : undefined;
 
@@ -242,8 +263,15 @@ export async function POST(request: Request) {
   const { imageUrl, genError } = await tryGenerateImage(
     model.id, model.steps, finalPrompt, referenceUrl, refParam, respFormat, noSteps,
   );
-  if (genError) return genError;
-  if (!imageUrl) return Response.json({ error: "No image returned" }, { status: 500 });
+  // Generation failed — refund the credits we charged.
+  if (genError) {
+    await refundCredits(cost);
+    return genError;
+  }
+  if (!imageUrl) {
+    await refundCredits(cost);
+    return Response.json({ error: "No image returned" }, { status: 500 });
+  }
 
-  return saveAndRespond({ supabase, userId: user.id, prompt, style, modelId, imageUrl });
+  return saveAndRespond({ supabase, userId: user.id, prompt, style, modelId, imageUrl, creditsRemaining: newBalance });
 }

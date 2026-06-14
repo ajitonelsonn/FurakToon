@@ -1,13 +1,27 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { useTheme } from "@/lib/theme/context";
 import { useT } from "@/lib/i18n/context";
+
+// Tiny external store that is `false` on the server / first hydration render and
+// `true` afterwards — lets us avoid a hydration mismatch without setState-in-
+// effect (which the lint rules disallow).
+const emptySubscribe = () => () => {};
 
 // Sun/moon icon button that flips between light and dark.
 export default function ThemeToggle() {
   const { resolved, toggle } = useTheme();
   const t = useT();
-  const isDark = resolved === "dark";
+
+  // The server (and first client render) can't know the resolved theme, so we
+  // render a neutral state until mounted to avoid a hydration mismatch.
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+  const isDark = mounted && resolved === "dark";
 
   return (
     <button
@@ -27,7 +41,7 @@ export default function ThemeToggle() {
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden="true"
-        className={`absolute h-[18px] w-[18px] transition-all duration-300 ${
+        className={`absolute h-4.5 w-4.5 transition-all duration-300 ${
           isDark ? "scale-0 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
         }`}
       >
@@ -44,7 +58,7 @@ export default function ThemeToggle() {
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden="true"
-        className={`absolute h-[18px] w-[18px] transition-all duration-300 ${
+        className={`absolute h-4.5 w-4.5 transition-all duration-300 ${
           isDark ? "scale-100 rotate-0 opacity-100" : "scale-0 rotate-90 opacity-0"
         }`}
       >

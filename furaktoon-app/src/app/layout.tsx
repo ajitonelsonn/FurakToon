@@ -6,6 +6,8 @@ import Navbar from "@/components/Navbar";
 import PendoInit from "@/components/PendoInit";
 import { I18nProvider } from "@/lib/i18n/context";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme/context";
+import { CreditsProvider } from "@/lib/credits/context";
+import { getBalance } from "@/lib/credits.server";
 import { createClient } from "@/lib/supabase/server";
 
 // Sora — geometric, friendly display face for headings & brand.
@@ -37,6 +39,9 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Logged-in users have a credit balance (with any pending monthly refill).
+  const initialBalance = user ? await getBalance() : null;
+
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning className={`${sora.variable} ${inter.variable} h-full`}>
       <head>
@@ -63,6 +68,7 @@ export default async function RootLayout({
         <PendoInit user={user} />
         <ThemeProvider>
         <I18nProvider>
+          <CreditsProvider initialBalance={initialBalance}>
           <Navbar user={user} />
 
           <main className="flex-1 flex flex-col">{children}</main>
@@ -84,6 +90,7 @@ export default async function RootLayout({
             </a>
           </p>
           </footer>
+          </CreditsProvider>
         </I18nProvider>
         </ThemeProvider>
       </body>

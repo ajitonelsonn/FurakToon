@@ -73,6 +73,25 @@ export type TranslationKey =
   | "theme.toggle"
   | "theme.light"
   | "theme.dark"
+  // credits
+  | "credits.label"
+  | "credits.balance"
+  | "credits.cost"
+  | "credits.costReference"
+  | "credits.outTitle"
+  | "credits.outMessage"
+  | "credits.resetsOn"
+  | "credits.monthlyNote"
+  // account
+  | "nav.account"
+  | "account.title"
+  | "account.subtitle"
+  | "account.creditsLeft"
+  | "account.ofAllowance"
+  | "account.usage"
+  | "account.usageNormal"
+  | "account.usageReference"
+  | "account.startCreating"
   // home — logged in
   | "home.welcomeBack"
   | "home.welcomePrompt"
@@ -218,6 +237,25 @@ const en: Record<TranslationKey, string> = {
   "theme.toggle": "Toggle theme",
   "theme.light": "Light",
   "theme.dark": "Dark",
+
+  "credits.label": "Credits",
+  "credits.balance": "{count} credits left",
+  "credits.cost": "Costs 1 credit",
+  "credits.costReference": "Costs 2 credits (reference image)",
+  "credits.outTitle": "Out of credits",
+  "credits.outMessage": "You've used all your credits for this month.",
+  "credits.resetsOn": "Resets on {date}",
+  "credits.monthlyNote": "You get {allowance} free credits every month.",
+
+  "nav.account": "Account",
+  "account.title": "Your Account",
+  "account.subtitle": "Manage your credits and plan",
+  "account.creditsLeft": "Credits left",
+  "account.ofAllowance": "of {allowance} this month",
+  "account.usage": "How credits are used",
+  "account.usageNormal": "Standard generation",
+  "account.usageReference": "With a reference image",
+  "account.startCreating": "Start creating",
 
   "home.welcomeBack": "Welcome back 👋",
   "home.welcomePrompt": "What beautiful toon will you create today?",

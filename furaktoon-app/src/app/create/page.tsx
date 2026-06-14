@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { IMAGE_MODELS } from "@/lib/models";
 import { useT } from "@/lib/i18n/context";
+import { useCredits } from "@/lib/credits/context";
+import { creditCost, nextResetDate } from "@/lib/credits";
 import type { TranslationKey } from "@/lib/i18n/translations";
 
 type Style = "anime" | "cartoon";
@@ -98,6 +100,8 @@ type Setters = {
   setPhase: (v: Phase) => void;
   setImageUrl: (v: string | null) => void;
   setWarning: (v: string | null) => void;
+  setCredits: (v: number) => void;
+  setOutOfCredits: (v: boolean) => void;
 };
 
 async function doEnhance(
@@ -142,11 +146,18 @@ async function doGenerate(
 
   s.setPhase("painting");
   const result = await runImageGeneration(prompt, style, selectedModel, referenceFile, t);
+  if (result.outOfCredits) {
+    s.setOutOfCredits(true);
+    s.setCredits(0);
+    s.setPhase("idle");
+    return;
+  }
   if (result.imageUrl) {
     s.setPhase("finalizing");
     await delay(600);
     s.setImageUrl(result.imageUrl);
     if (result.warning) s.setWarning(result.warning);
+    if (typeof result.creditsRemaining === "number") s.setCredits(result.creditsRemaining);
     s.setPhase("done");
   } else {
     s.setError(result.error ?? t("create.errGenFailed"));
@@ -179,7 +190,7 @@ async function runImageGeneration(
   modelId: string,
   referenceFile: File | null,
   t: T,
-): Promise<{ imageUrl?: string; warning?: string; error?: string }> {
+): Promise<{ imageUrl?: string; warning?: string; error?: string; creditsRemaining?: number; outOfCredits?: boolean }> {
   try {
     const form = new FormData();
     form.append("prompt", prompt);
@@ -187,7 +198,12 @@ async function runImageGeneration(
     form.append("modelId", modelId);
     if (referenceFile) form.append("referenceImage", referenceFile);
     const res = await fetch("/api/generate", { method: "POST", body: form });
-    return await res.json();
+    const data = await res.json();
+    // 402 → not enough credits.
+    if (res.status === 402 || data?.error === "out_of_credits") {
+      return { outOfCredits: true };
+    }
+    return data;
   } catch {
     return { error: t("create.errGenRetry") };
   }
@@ -215,6 +231,8 @@ const MAX_MB = 5;
 
 export default function CreatePage() {
   const t = useT();
+  const { balance, setBalance } = useCredits();
+  const [outOfCredits, setOutOfCredits]     = useState(false);
   const [prompt, setPrompt]                 = useState("");
   const [style, setStyle]                   = useState<Style>("anime");
   const [selectedModel, setSelectedModel]   = useState<string>(IMAGE_MODELS[0].id);
@@ -262,13 +280,25 @@ export default function CreatePage() {
 
   const setters: Setters = {
     setPrompt, setEnhancing, setError, setPhase, setImageUrl, setWarning,
+    setCredits: setBalance, setOutOfCredits,
   };
+
+  // Cost mirrors the server: 2 credits when a reference image will actually be
+  // used (model supports it + a file is attached), otherwise 1.
+  const activeModel = IMAGE_MODELS.find((m) => m.id === selectedModel);
+  const usesReference = !!(referenceFile && activeModel?.supportsReferenceImage);
+  const cost = creditCost(usesReference);
+  const cannotAfford = balance !== null && balance < cost;
+  const resetDateLabel = nextResetDate().toLocaleDateString(undefined, {
+    month: "short", day: "numeric",
+  });
 
   const handleEnhance = () => {
     if (prompt.trim()) doEnhance(prompt, style, !!referenceFile, setters, t);
   };
 
   const handleGenerate = () => {
+    setOutOfCredits(false);
     if (prompt.trim()) doGenerate(prompt, style, selectedModel, referenceFile, setters, t);
   };
 
@@ -640,10 +670,19 @@ export default function CreatePage() {
           </div>
         </div>
 
+        {/* Out-of-credits banner */}
+        {(outOfCredits || cannotAfford) && (
+          <div className="surface rounded-3xl p-5 text-center animate-fade-in border border-orange/30">
+            <p className="font-display font-bold text-navy">⚡ {t("credits.outTitle")}</p>
+            <p className="text-sm text-navy/60 mt-1">{t("credits.outMessage")}</p>
+            <p className="text-xs text-navy/45 mt-2">{t("credits.resetsOn", { date: resetDateLabel })}</p>
+          </div>
+        )}
+
         {/* Generate Button */}
         <button
           onClick={handleGenerate}
-          disabled={!prompt.trim()}
+          disabled={!prompt.trim() || cannotAfford}
           className={`group w-full py-4 rounded-2xl font-display font-extrabold text-white text-lg active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ${
             style === "anime"
               ? "bg-linear-to-r from-sky to-grape glow-sky hover:brightness-105"
@@ -653,6 +692,14 @@ export default function CreatePage() {
           <span className="inline-block transition-transform group-hover:scale-110">✨</span>{" "}
           {t("create.generateButton")}
         </button>
+
+        {/* Cost + balance hint */}
+        <p className="text-center text-xs text-navy/50">
+          {usesReference ? t("credits.costReference") : t("credits.cost")}
+          {balance !== null && (
+            <> · <span className="font-semibold">{t("credits.balance", { count: balance })}</span></>
+          )}
+        </p>
       </div>
     </div>
   );
