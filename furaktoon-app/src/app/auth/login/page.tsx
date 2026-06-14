@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { login } from "@/app/actions/auth";
+import { useT } from "@/lib/i18n/context";
 
 export default function LoginPage() {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -30,13 +32,13 @@ export default function LoginPage() {
             <p className="text-center font-extrabold text-2xl text-navy">
               Furak<span className="text-sky">Toon</span>
             </p>
-            <p className="text-center text-xs text-gray-400 mt-0.5">Beautiful AI Cartoons</p>
+            <p className="text-center text-xs text-gray-400 mt-0.5">{t("auth.tagline")}</p>
           </div>
         </div>
 
         <div className="bg-white rounded-3xl shadow-xl border border-navy/5 p-8">
-          <h2 className="text-2xl font-extrabold text-navy mb-1 text-center">Welcome back!</h2>
-          <p className="text-center text-sm text-gray-400 mb-7">Sign in to continue creating</p>
+          <h2 className="text-2xl font-extrabold text-navy mb-1 text-center">{t("auth.loginTitle")}</h2>
+          <p className="text-center text-sm text-gray-400 mb-7">{t("auth.loginSubtitle")}</p>
 
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-3 mb-5 text-sm font-medium">
@@ -46,18 +48,18 @@ export default function LoginPage() {
 
           <form action={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-navy mb-1.5">Email</label>
+              <label htmlFor="email" className="block text-sm font-semibold text-navy mb-1.5">{t("auth.emailLabel")}</label>
               <input
                 id="email" name="email" type="email" required
-                placeholder="you@example.com"
+                placeholder={t("auth.emailPlaceholder")}
                 className="w-full border-2 border-gray-100 hover:border-sky/30 focus:border-sky rounded-2xl px-4 py-3 text-ink text-sm focus:outline-none transition-colors bg-cream/50"
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-navy mb-1.5">Password</label>
+              <label htmlFor="password" className="block text-sm font-semibold text-navy mb-1.5">{t("auth.passwordLabel")}</label>
               <input
                 id="password" name="password" type="password" required
-                placeholder="••••••••"
+                placeholder={t("auth.loginPasswordPlaceholder")}
                 className="w-full border-2 border-gray-100 hover:border-sky/30 focus:border-sky rounded-2xl px-4 py-3 text-ink text-sm focus:outline-none transition-colors bg-cream/50"
               />
             </div>
@@ -66,13 +68,13 @@ export default function LoginPage() {
               type="submit" disabled={loading}
               className="w-full mt-2 bg-navy hover:bg-[#2a3f8f] text-white font-bold py-3.5 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Signing in…" : "Sign in →"}
+              {loading ? t("auth.signingIn") : `${t("auth.signInCta")} →`}
             </button>
           </form>
 
           <div className="mt-4 pt-4 border-t border-gray-100 text-center text-sm text-gray-400">
-            Don&apos;t have an account?{" "}
-            <Link href="/auth/register" className="text-sky font-bold hover:underline">Create one</Link>
+            {t("auth.noAccount")}{" "}
+            <Link href="/auth/register" className="text-sky font-bold hover:underline">{t("auth.createOne")}</Link>
           </div>
         </div>
       </div>

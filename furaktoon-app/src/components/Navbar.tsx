@@ -4,10 +4,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
+import { useT } from "@/lib/i18n/context";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import type { User } from "@supabase/supabase-js";
 
 export default function Navbar({ user }: Readonly<{ user: User | null }>) {
   const pathname = usePathname();
+  const t = useT();
 
   const isActive = (href: string) => pathname === href;
 
@@ -42,7 +45,7 @@ export default function Navbar({ user }: Readonly<{ user: User | null }>) {
                     : "text-gray-500 hover:text-navy hover:bg-gray-100"
                 }`}
               >
-                <span>✨</span> Create
+                <span>✨</span> {t("nav.create")}
               </Link>
               <Link
                 href="/gallery"
@@ -52,14 +55,15 @@ export default function Navbar({ user }: Readonly<{ user: User | null }>) {
                     : "text-gray-500 hover:text-navy hover:bg-gray-100"
                 }`}
               >
-                <span>🖼️</span> Gallery
+                <span>🖼️</span> {t("nav.gallery")}
               </Link>
+              <LanguageSwitcher />
               <form action={logout} className="ml-1">
                 <button
                   type="submit"
                   className="text-sm text-gray-400 hover:text-red-400 px-3 py-2 rounded-xl hover:bg-red-50 transition-all duration-150 font-medium"
                 >
-                  Sign out
+                  {t("nav.signOut")}
                 </button>
               </form>
             </>
@@ -69,14 +73,15 @@ export default function Navbar({ user }: Readonly<{ user: User | null }>) {
                 href="/auth/login"
                 className="text-sm font-semibold text-gray-500 hover:text-navy px-4 py-2 rounded-xl hover:bg-gray-100 transition-all"
               >
-                Sign in
+                {t("nav.signIn")}
               </Link>
               <Link
                 href="/auth/register"
                 className="text-sm font-bold bg-navy hover:bg-[#2a3f8f] text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg active:scale-95 transition-all duration-150"
               >
-                Get started
+                {t("nav.getStarted")}
               </Link>
+              <LanguageSwitcher />
             </>
           )}
         </div>

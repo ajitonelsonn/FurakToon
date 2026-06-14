@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import PendoInit from "@/components/PendoInit";
+import { I18nProvider } from "@/lib/i18n/context";
 import { createClient } from "@/lib/supabase/server";
 
 const poppins = Poppins({
@@ -53,11 +54,12 @@ export default async function RootLayout({
         />
 
         <PendoInit user={user} />
-        <Navbar user={user} />
+        <I18nProvider>
+          <Navbar user={user} />
 
-        <main className="flex-1 flex flex-col">{children}</main>
+          <main className="flex-1 flex flex-col">{children}</main>
 
-        <footer className="py-6 text-center text-xs text-gray-400 border-t border-gray-100">
+          <footer className="py-6 text-center text-xs text-gray-400 border-t border-gray-100">
           <p>
             <span className="font-semibold text-fuchsia-500">FurakToon</span> —{" "}
             <em>furak</em> means &ldquo;beautiful&rdquo; in Tetum ·{" "}
@@ -70,7 +72,8 @@ export default async function RootLayout({
               Mind the Product Hackathon 2026
             </a>
           </p>
-        </footer>
+          </footer>
+        </I18nProvider>
       </body>
     </html>
   );
