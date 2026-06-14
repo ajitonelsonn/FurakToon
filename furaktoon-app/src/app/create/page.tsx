@@ -43,23 +43,37 @@ type StepState = {
 };
 
 const WRAP_CLS = {
-  failed:  "border-red-300 bg-red-50 scale-[1.02]",
-  active:  "border-sky bg-sky/5 shadow-lg scale-[1.02]",
-  done:    "border-green-200 bg-green-50",
-  pending: "border-gray-100 bg-white opacity-40",
+  failed:  "border-red-300 bg-red-50/80 scale-[1.02] shadow-lg",
+  active:  "border-sky/50 bg-white/80 shadow-lift scale-[1.02]",
+  done:    "border-emerald-200 bg-emerald-50/70",
+  pending: "border-navy/8 bg-white/40 opacity-55",
 };
 const ICON_CLS = {
   failed:  "bg-red-100 text-red-500",
-  active:  "bg-sky text-white shadow-md animate-pulse",
-  done:    "bg-green-100 text-green-600",
-  pending: "bg-gray-100 text-gray-300",
+  active:  "btn-gradient text-white",
+  done:    "bg-emerald-100 text-emerald-600",
+  pending: "bg-navy/8 text-navy/30",
 };
 const LABEL_CLS = {
   failed:  "text-red-600",
   active:  "text-navy",
-  done:    "text-green-700",
-  pending: "text-gray-300",
+  done:    "text-emerald-700",
+  pending: "text-navy/35",
 };
+
+// Overall progress (0–100) shown as a top bar in the generating view.
+function progressPct(phase: Phase): number {
+  switch (phase) {
+    case "safety": return 12;
+    case "safety_done": return 28;
+    case "enhance": return 40;
+    case "enhance_done": return 55;
+    case "painting": return 78;
+    case "finalizing": return 92;
+    case "done": return 100;
+    default: return 0;
+  }
+}
 
 function resolveStepState(i: number, phase: Phase, stepIcon: string): StepState {
   const current  = stepIndex(phase);
@@ -279,15 +293,15 @@ export default function CreatePage() {
         {phase === "safety_failed" && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" />
-            <div className="relative bg-white rounded-3xl shadow-2xl border border-red-100 p-8 max-w-sm w-full text-center animate-[fadeIn_0.2s_ease-out]">
+            <div className="relative glass rounded-4xl shadow-2xl p-8 max-w-sm w-full text-center animate-fade-in">
               <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">🚫</div>
-              <h2 className="text-xl font-extrabold text-navy mb-2">{t("create.promptNotAllowed")}</h2>
-              <p className="text-sm text-gray-500 leading-relaxed mb-6">{error}</p>
+              <h2 className="font-display text-xl font-extrabold text-navy mb-2">{t("create.promptNotAllowed")}</h2>
+              <p className="text-sm text-navy/60 leading-relaxed mb-6">{error}</p>
               <div className="flex gap-3">
-                <button onClick={handleReset} className="flex-1 py-3 rounded-2xl border-2 border-navy/20 text-navy font-bold text-sm hover:bg-navy/5 transition-all active:scale-95">
+                <button onClick={handleReset} className="flex-1 py-3 rounded-2xl glass text-navy font-bold text-sm hover:bg-white/80 transition-all active:scale-95">
                   ← {t("common.goBack")}
                 </button>
-                <button onClick={() => { setPhase("idle"); setError(null); setPrompt(""); }} className="flex-1 py-3 rounded-2xl bg-sky text-white font-bold text-sm hover:bg-[#3a9fd6] shadow-md transition-all active:scale-95">
+                <button onClick={() => { setPhase("idle"); setError(null); setPrompt(""); }} className="btn-gradient flex-1 py-3 rounded-2xl font-bold text-sm">
                   {t("create.tryNewPrompt")}
                 </button>
               </div>
@@ -295,19 +309,49 @@ export default function CreatePage() {
           </div>
         )}
 
-        <div className="w-full max-w-sm space-y-10">
-          <div className="text-center">
-            <p className="text-xs font-bold text-navy/40 uppercase tracking-widest mb-2">
+        <div className="surface w-full max-w-md rounded-4xl p-6 sm:p-8 space-y-7 animate-rise">
+          {/* Header + overall progress */}
+          <div className="text-center space-y-3">
+            <p className="text-xs font-bold text-navy/45 uppercase tracking-widest">
               {phase === "safety_failed" ? t("create.safetyFailedTitle") : t("create.creatingTitle")}
             </p>
-            <p className="text-sm text-gray-400 truncate max-w-xs mx-auto">&ldquo;{prompt}&rdquo;</p>
+            <p className="text-sm text-navy/60 truncate max-w-xs mx-auto">&ldquo;{prompt}&rdquo;</p>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-navy/8">
+              <div
+                className="aurora h-full rounded-full transition-[width] duration-700 ease-out"
+                style={{ width: `${progressPct(phase)}%` }}
+              />
+            </div>
           </div>
 
-          <div className="space-y-3">
+          {/* Live painting preview */}
+          {(phase === "painting" || phase === "finalizing") && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative w-full aspect-square max-w-56 rounded-3xl overflow-hidden border-2 border-sky/20 flex items-center justify-center glow-grape">
+                {referencePreview ? (
+                  <Image src={referencePreview} alt="Reference" fill className="object-cover opacity-40" unoptimized />
+                ) : (
+                  <div className="absolute inset-0 aurora opacity-25" />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-7xl animate-bounce" style={{ animationDuration: "1.5s" }}>🎨</div>
+                </div>
+                <div className="absolute inset-0 shimmer opacity-30 rounded-3xl" />
+              </div>
+              <div className="flex gap-1.5">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} className="w-2 h-2 rounded-full bg-grape bounce-dot" style={{ animationDelay: `${i * 0.15}s` }} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step rows */}
+          <div className="space-y-2.5">
             {STEPS.map((step, i) => {
               const s = resolveStepState(i, phase, step.icon);
               return (
-                <div key={step.phase} className={`flex items-center gap-4 rounded-2xl px-5 py-4 border-2 transition-all duration-500 ${s.wrapCls}`}>
+                <div key={step.phase} className={`flex items-center gap-4 rounded-2xl px-4 py-3 border-2 transition-all duration-500 ${s.wrapCls}`}>
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 transition-all duration-300 ${s.iconCls}`}>
                     {s.icon}
                   </div>
@@ -320,33 +364,14 @@ export default function CreatePage() {
                         {t(step.sublabelKey)}
                       </p>
                     )}
-                    {s.isDone && <p className="text-xs text-green-500 mt-0.5">{t("create.stepComplete")}</p>}
+                    {s.isDone && <p className="text-xs text-emerald-500 mt-0.5">{t("create.stepComplete")}</p>}
                   </div>
                   {s.isActive && <div className="shrink-0 w-5 h-5 border-2 border-sky border-t-transparent rounded-full animate-spin" />}
-                  {s.isPending && <div className="shrink-0 w-2 h-2 rounded-full bg-gray-200" />}
+                  {s.isPending && <div className="shrink-0 w-2 h-2 rounded-full bg-navy/15" />}
                 </div>
               );
             })}
           </div>
-
-          {(phase === "painting" || phase === "finalizing") && (
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative w-48 h-48 rounded-3xl overflow-hidden bg-navy/5 border-2 border-navy/10 flex items-center justify-center">
-                {referencePreview ? (
-                  <Image src={referencePreview} alt="Reference" fill className="object-cover opacity-40" unoptimized />
-                ) : null}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-7xl animate-bounce" style={{ animationDuration: "1.5s" }}>🎨</div>
-                </div>
-                <div className="absolute inset-0 shimmer opacity-30 rounded-3xl" />
-              </div>
-              <div className="flex gap-1.5">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <span key={i} className="w-2 h-2 rounded-full bg-sky bounce-dot" style={{ animationDelay: `${i * 0.15}s` }} />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -356,17 +381,17 @@ export default function CreatePage() {
   if (phase === "done" && imageUrl) {
     return (
       <div className="flex-1 px-4 sm:px-6 py-10 max-w-xl mx-auto w-full" ref={resultRef}>
-        <div className="space-y-5">
+        <div className="space-y-5 animate-rise">
           <div className="text-center">
-            <p className="text-2xl font-extrabold text-navy">{t("create.ready")}</p>
-            <p className="text-sm text-gray-400 mt-1 line-clamp-1">&ldquo;{prompt}&rdquo;</p>
+            <p className="font-display text-3xl font-extrabold text-navy">{t("create.ready")}</p>
+            <p className="text-sm text-navy/55 mt-1 line-clamp-1">&ldquo;{prompt}&rdquo;</p>
           </div>
 
           <div className="grid grid-cols-4 gap-2">
             {STEPS.map((step) => (
-              <div key={step.phase} className="flex flex-col items-center gap-1 bg-green-50 border border-green-100 rounded-2xl py-3 px-1">
-                <span className="text-green-500 font-bold text-sm">✓</span>
-                <span className="text-xs text-green-600 font-semibold text-center leading-tight">{t(step.labelKey)}</span>
+              <div key={step.phase} className="flex flex-col items-center gap-1 bg-emerald-50/80 border border-emerald-100 rounded-2xl py-3 px-1">
+                <span className="text-emerald-500 font-bold text-sm">✓</span>
+                <span className="text-xs text-emerald-600 font-semibold text-center leading-tight">{t(step.labelKey)}</span>
               </div>
             ))}
           </div>
@@ -376,25 +401,25 @@ export default function CreatePage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <p className="text-xs font-bold text-navy/50 uppercase tracking-widest text-center">{t("create.yourReference")}</p>
-                <div className="rounded-2xl overflow-hidden border-2 border-navy/10 aspect-square relative">
+                <div className="rounded-3xl overflow-hidden border-2 border-navy/10 aspect-square relative shadow-soft">
                   <Image src={referencePreview} alt="Reference" fill className="object-cover" unoptimized />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <p className="text-xs font-bold text-navy/50 uppercase tracking-widest text-center">{t("create.generatedToon")}</p>
-                <div className="rounded-2xl overflow-hidden border-2 border-sky/30 aspect-square relative">
+                <div className="rounded-3xl overflow-hidden border-2 border-sky/40 aspect-square relative shadow-lift glow-sky">
                   <Image src={imageUrl} alt="Generated toon" fill className="object-cover" unoptimized />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="rounded-3xl overflow-hidden shadow-2xl border-2 border-navy/10 bg-white">
+            <div className="rounded-4xl overflow-hidden shadow-lift border-2 border-white/60 glow-grape">
               <Image src={imageUrl} alt="Generated toon" width={1024} height={1024} className="w-full h-auto" unoptimized />
             </div>
           )}
 
           <div className="flex gap-3">
-            <button onClick={handleReset} className="flex-1 py-3.5 rounded-2xl border-2 border-navy/20 text-navy font-bold hover:bg-navy/5 transition-all active:scale-95">
+            <button onClick={handleReset} className="flex-1 py-3.5 rounded-2xl glass text-navy font-bold hover:bg-white/80 transition-all active:scale-95">
               ← {t("create.createAnother")}
             </button>
             <a
@@ -407,7 +432,7 @@ export default function CreatePage() {
                   pendo.track("image_downloaded", { source: "create", style, modelId: selectedModel });
                 }
               }}
-              className="flex-1 py-3.5 rounded-2xl bg-navy hover:bg-[#2a3f8f] text-white font-bold text-center shadow-lg hover:shadow-xl transition-all active:scale-95">
+              className="btn-gradient flex-1 py-3.5 rounded-2xl font-bold text-center">
               ↓ {t("create.download")}
             </a>
           </div>
@@ -425,9 +450,9 @@ export default function CreatePage() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-16 text-center">
         <div className="text-5xl mb-4">😬</div>
-        <p className="text-xl font-extrabold text-navy mb-2">{t("create.somethingWrong")}</p>
+        <p className="font-display text-2xl font-extrabold text-navy mb-2">{t("create.somethingWrong")}</p>
         <p className="text-sm text-red-500 mb-6 max-w-sm">{error}</p>
-        <button onClick={handleReset} className="bg-navy hover:bg-[#2a3f8f] text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all">
+        <button onClick={handleReset} className="btn-gradient font-bold px-7 py-3.5 rounded-2xl">
           ← {t("common.tryAgain")}
         </button>
       </div>
@@ -437,28 +462,31 @@ export default function CreatePage() {
   /* ── IDLE / FORM VIEW ── */
   return (
     <div className="flex-1 px-4 sm:px-6 py-10 max-w-2xl mx-auto w-full">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-extrabold text-navy">{t("create.title")}</h1>
-        <p className="text-gray-400 text-sm mt-1.5">{t("create.subtitle")}</p>
+      <div className="mb-8 text-center animate-rise">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-grape/10 text-grape px-3 py-1 text-xs font-bold mb-3">
+          ✨ AI Studio
+        </span>
+        <h1 className="font-display text-4xl font-extrabold text-navy">{t("create.title")}</h1>
+        <p className="text-navy/55 text-sm mt-1.5">{t("create.subtitle")}</p>
       </div>
 
       <div className="space-y-5">
 
         {/* Style Toggle */}
-        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+        <div className="surface rounded-3xl p-5">
           <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">{t("create.styleLabel")}</p>
           <div className="grid grid-cols-2 gap-3">
             {(["anime", "cartoon"] as Style[]).map((s) => {
               const active = style === s;
-              let cls = "border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200";
+              let cls = "border-navy/8 bg-white/40 text-navy/45 hover:border-navy/20 hover:text-navy/70";
               if (active) {
                 cls = s === "anime"
-                  ? "border-sky bg-sky/10 text-navy shadow-md"
-                  : "border-orange bg-orange/10 text-navy shadow-md";
+                  ? "border-sky bg-sky/12 text-navy shadow-lift scale-[1.02]"
+                  : "border-orange bg-orange/12 text-navy shadow-lift scale-[1.02]";
               }
               return (
                 <button key={s} onClick={() => setStyle(s)}
-                  className={`flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-bold text-sm transition-all duration-150 ${cls}`}>
+                  className={`flex items-center justify-center gap-2 py-4 rounded-2xl border-2 font-bold text-base transition-all duration-200 ${cls}`}>
                   {s === "anime" ? `🎌 ${t("create.anime")}` : `🎨 ${t("create.cartoon")}`}
                   {active && <span className="w-2 h-2 rounded-full bg-current opacity-60" />}
                 </button>
@@ -468,7 +496,7 @@ export default function CreatePage() {
         </div>
 
         {/* Reference character upload */}
-        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+        <div className="surface rounded-3xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs font-bold text-navy/50 uppercase tracking-widest">{t("create.refLabel")}</p>
@@ -533,7 +561,7 @@ export default function CreatePage() {
         </div>
 
         {/* Prompt */}
-        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+        <div className="surface rounded-3xl p-5">
           <p className="text-xs font-bold text-navy/50 uppercase tracking-widest mb-3">{t("create.promptLabel")}</p>
           <textarea
             id="prompt"
@@ -541,7 +569,7 @@ export default function CreatePage() {
             onChange={(e) => setPrompt(e.target.value)}
             placeholder={t("create.promptPlaceholder")}
             rows={4}
-            className="w-full border-2 border-gray-100 hover:border-sky/30 focus:border-sky rounded-2xl px-4 py-3 text-ink text-sm resize-none focus:outline-none transition-colors bg-cream/50"
+            className="w-full border-2 border-navy/10 hover:border-sky/40 focus:border-sky rounded-2xl px-4 py-3 text-ink text-sm resize-none focus:outline-none transition-colors bg-white/70"
           />
           <button
             onClick={handleEnhance}
@@ -554,7 +582,7 @@ export default function CreatePage() {
         </div>
 
         {/* Model Picker */}
-        <div className="bg-white rounded-3xl shadow-md border border-gray-100 p-5">
+        <div className="surface rounded-3xl p-5">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold text-navy/50 uppercase tracking-widest">{t("create.modelLabel")}</p>
             {referenceFile && (
@@ -565,31 +593,31 @@ export default function CreatePage() {
             {IMAGE_MODELS.map((m) => {
               const active = selectedModel === m.id;
               const locked = !!referenceFile && !m.supportsReferenceImage;
-              let cardCls = "border-gray-100 hover:border-navy/20 bg-gray-50";
-              if (active) cardCls = "border-navy bg-navy/5 shadow-md";
-              if (locked) cardCls = "border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed";
+              let cardCls = "border-navy/8 hover:border-navy/25 bg-white/50 hover:-translate-y-0.5";
+              if (active) cardCls = "border-grape/50 bg-grape/5 shadow-lift -translate-y-0.5";
+              if (locked) cardCls = "border-navy/8 bg-white/40 opacity-40 cursor-not-allowed";
               return (
                 <button
                   key={m.id}
                   onClick={() => { if (!locked) setSelectedModel(m.id); }}
                   disabled={locked}
-                  className={`text-left rounded-2xl border-2 p-4 transition-all duration-150 ${cardCls}`}
+                  className={`text-left rounded-2xl border-2 p-4 transition-all duration-200 ${cardCls}`}
                 >
                   <div className="flex items-center justify-between mb-1 gap-1 flex-wrap">
-                    <span className={`font-bold text-sm ${active && !locked ? "text-navy" : "text-gray-600"}`}>{m.name}</span>
+                    <span className={`font-bold text-sm ${active && !locked ? "text-navy" : "text-navy/70"}`}>{m.name}</span>
                     <div className="flex items-center gap-1">
                       {m.supportsReferenceImage && (
                         <span className="text-xs bg-orange/15 text-orange font-bold px-2 py-0.5 rounded-full">📸 Ref</span>
                       )}
                       {"default" in m && m.default && !referenceFile && (
-                        <span className="text-xs bg-sky/20 text-sky font-bold px-2 py-0.5 rounded-full">{t("create.default")}</span>
+                        <span className="text-xs bg-sky/20 text-sky-600 font-bold px-2 py-0.5 rounded-full">{t("create.default")}</span>
                       )}
                       {locked && (
-                        <span className="text-xs bg-gray-100 text-gray-400 font-bold px-2 py-0.5 rounded-full">🔒 {t("create.locked")}</span>
+                        <span className="text-xs bg-navy/8 text-navy/40 font-bold px-2 py-0.5 rounded-full">🔒 {t("create.locked")}</span>
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400">{m.description}</p>
+                  <p className="text-xs text-navy/50">{m.description}</p>
                 </button>
               );
             })}
@@ -597,16 +625,16 @@ export default function CreatePage() {
         </div>
 
         {/* Process preview */}
-        <div className="bg-navy/3 border border-navy/8 rounded-3xl p-4">
+        <div className="rounded-3xl border border-navy/8 bg-white/40 p-4">
           <p className="text-xs font-bold text-navy/40 uppercase tracking-widest mb-3 text-center">{t("create.processTitle")}</p>
           <div className="flex items-center justify-between gap-1">
             {STEPS.map((step, i) => (
               <div key={step.phase} className="flex items-center gap-1 flex-1">
-                <div className="flex flex-col items-center gap-1 flex-1">
-                  <span className="text-lg">{step.icon}</span>
-                  <span className="text-xs text-navy/50 font-semibold text-center leading-tight">{t(step.labelKey)}</span>
+                <div className="flex flex-col items-center gap-1.5 flex-1">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy/5 text-lg">{step.icon}</span>
+                  <span className="text-xs text-navy/55 font-semibold text-center leading-tight">{t(step.labelKey)}</span>
                 </div>
-                {i < STEPS.length - 1 && <span className="text-gray-200 text-sm shrink-0">→</span>}
+                {i < STEPS.length - 1 && <span className="text-navy/20 text-sm shrink-0">→</span>}
               </div>
             ))}
           </div>
@@ -616,11 +644,14 @@ export default function CreatePage() {
         <button
           onClick={handleGenerate}
           disabled={!prompt.trim()}
-          className={`w-full py-4 rounded-2xl font-extrabold text-white text-lg shadow-xl hover:shadow-2xl active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-150 ${
-            style === "anime" ? "bg-sky hover:bg-[#3a9fd6] glow-sky" : "bg-orange hover:bg-[#d97316] glow-orange"
+          className={`group w-full py-4 rounded-2xl font-display font-extrabold text-white text-lg active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ${
+            style === "anime"
+              ? "bg-linear-to-r from-sky to-grape glow-sky hover:brightness-105"
+              : "bg-linear-to-r from-orange to-pink glow-orange hover:brightness-105"
           }`}
         >
-          ✨ {t("create.generateButton")}
+          <span className="inline-block transition-transform group-hover:scale-110">✨</span>{" "}
+          {t("create.generateButton")}
         </button>
       </div>
     </div>

@@ -1,13 +1,24 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-navy: #1B2B6B;
-  --color-sky: #4DAFEE;
-  --color-orange: #F5841F;
-  --color-cream: #F8F9FF;
-  --color-ink: #0D1433;
+  /* Brand palette — refined for richer contrast & depth */
+  --color-navy: #16235C;       /* deep brand navy */
+  --color-navy-700: #25357d;
+  --color-sky: #3DA9F5;        /* vivid sky blue */
+  --color-sky-600: #2b91dc;
+  --color-orange: #FB8B24;     /* warm accent */
+  --color-orange-600: #e0760f;
+  --color-grape: #7C5CFC;      /* new accent for gradients */
+  --color-pink: #F65C9A;       /* new accent for gradients */
+  --color-cream: #F7F8FE;      /* near-white app surface */
+  --color-ink: #0C1330;        /* body text */
+
   --font-sans: var(--font-inter);
-  --font-display: var(--font-poppins);
+  --font-display: var(--font-sora);
+
+  /* Elevation tokens */
+  --shadow-soft: 0 4px 24px -6px rgba(22, 35, 92, 0.12);
+  --shadow-lift: 0 18px 48px -12px rgba(22, 35, 92, 0.28);
 }
 
 * {
@@ -19,28 +30,101 @@ html {
 }
 
 body {
-  background: #F8F9FF;
-  color: #0D1433;
+  background: var(--color-cream);
+  color: var(--color-ink);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-poppins), system-ui, sans-serif;
+  font-family: var(--font-sora), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Display helper */
+.font-display {
+  font-family: var(--font-sora), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ── App-wide ambient background ──
+   Soft brand gradient blobs that sit behind every page for a cohesive,
+   immersive feel without distracting from content. */
+.app-bg::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 60rem at 8% -10%, rgba(61, 169, 245, 0.16), transparent 60%),
+    radial-gradient(48rem 48rem at 100% 0%, rgba(124, 92, 252, 0.14), transparent 55%),
+    radial-gradient(50rem 50rem at 50% 120%, rgba(251, 139, 36, 0.12), transparent 60%);
+}
+
+/* ── Glassmorphism ── */
+.glass {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-soft);
+}
+.glass-dark {
+  background: rgba(12, 19, 48, 0.42);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Card surface used across dashboard/create/gallery */
+.surface {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(22, 35, 92, 0.07);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ── Gradient text ── */
+.text-gradient {
+  background: linear-gradient(100deg, var(--color-sky), var(--color-grape) 55%, var(--color-pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradient brand button */
+.btn-gradient {
+  background: linear-gradient(110deg, var(--color-sky), var(--color-grape));
+  color: #fff;
+  box-shadow: 0 10px 28px -8px rgba(124, 92, 252, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.btn-gradient:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 14px 34px -8px rgba(124, 92, 252, 0.6);
+}
+.btn-gradient:active {
+  transform: scale(0.97);
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #F8F9FF; }
-::-webkit-scrollbar-thumb { background: #4DAFEE55; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #4DAFEE; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3DA9F555; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #3DA9F5; }
 
 /* Glow utilities */
 .glow-sky {
-  box-shadow: 0 0 24px 0 #4DAFEE44;
+  box-shadow: 0 0 28px 0 #3DA9F555;
 }
 .glow-orange {
-  box-shadow: 0 0 24px 0 #F5841F44;
+  box-shadow: 0 0 28px 0 #FB8B2455;
+}
+.glow-grape {
+  box-shadow: 0 0 28px 0 #7C5CFC55;
 }
 
 /* Bounce dots animation */
@@ -68,6 +152,18 @@ h1, h2, h3, h4, h5, h6 {
   from { opacity: 0; transform: scale(0.95) translateY(8px); }
   to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out both;
+}
+
+/* Rise-in on load (staggerable via inline delay) */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-rise {
+  animation: riseIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
 /* Floating sparkle */
 @keyframes float {
@@ -76,4 +172,35 @@ h1, h2, h3, h4, h5, h6 {
 }
 .float {
   animation: float 3s ease-in-out infinite;
+}
+
+/* Slow marquee for showcase strip */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 36s linear infinite;
+}
+.marquee-pause:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+/* Animated aurora gradient (for hero accents) */
+@keyframes aurora {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.aurora {
+  background: linear-gradient(120deg, #3DA9F5, #7C5CFC, #F65C9A, #FB8B24);
+  background-size: 300% 300%;
+  animation: aurora 14s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float, .animate-marquee, .aurora, .bounce-dot, .shimmer,
+  .animate-rise, .animate-fade-in {
+    animation: none !important;
+  }
+  html { scroll-behavior: auto; }
 }

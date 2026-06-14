@@ -25,12 +25,12 @@ export function GalleryView({ items }: Readonly<{ items: Generation[] }>) {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-navy">{t("gallery.title")}</h1>
-          <p className="text-gray-400 text-sm mt-1">{countLabel}</p>
+          <h1 className="font-display text-4xl font-extrabold text-navy">{t("gallery.title")}</h1>
+          <p className="text-navy/55 text-sm mt-1">{countLabel}</p>
         </div>
         <Link
           href="/create"
-          className="flex items-center gap-2 bg-navy hover:bg-[#2a3f8f] text-white font-bold px-5 py-2.5 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-150 text-sm"
+          className="btn-gradient flex items-center gap-2 font-bold px-5 py-2.5 rounded-2xl text-sm"
         >
           ✨ {t("gallery.createNew")}
         </Link>
@@ -38,13 +38,13 @@ export function GalleryView({ items }: Readonly<{ items: Generation[] }>) {
 
       {items.length === 0 ? (
         /* Empty state */
-        <div className="bg-white rounded-3xl border-2 border-dashed border-sky/30 p-16 text-center">
+        <div className="surface rounded-4xl border-2 border-dashed border-sky/30 p-16 text-center">
           <div className="text-5xl mb-4 float inline-block">🎨</div>
-          <p className="font-extrabold text-navy text-xl mt-2">{t("gallery.emptyTitle")}</p>
-          <p className="text-sm text-gray-400 mt-2 mb-6">{t("gallery.emptyHint")}</p>
+          <p className="font-display font-extrabold text-navy text-xl mt-2">{t("gallery.emptyTitle")}</p>
+          <p className="text-sm text-navy/55 mt-2 mb-6">{t("gallery.emptyHint")}</p>
           <Link
             href="/create"
-            className="inline-flex items-center gap-2 bg-sky hover:bg-[#3a9fd6] text-white font-bold px-7 py-3.5 rounded-2xl shadow-lg active:scale-95 transition-all glow-sky"
+            className="btn-gradient inline-flex items-center gap-2 font-bold px-7 py-3.5 rounded-2xl"
           >
             ✨ {t("gallery.makeFirst")}
           </Link>
@@ -69,7 +69,7 @@ function GalleryCard({ gen }: Readonly<{ gen: Generation }>) {
   });
 
   return (
-    <div className="group bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden border border-gray-100 hover:border-sky/20">
+    <div className="group surface rounded-3xl hover:shadow-lift hover:-translate-y-1 transition-all duration-200 overflow-hidden hover:border-sky/20">
 
       {/* Image */}
       <div className="relative aspect-square overflow-hidden">
@@ -97,8 +97,8 @@ function GalleryCard({ gen }: Readonly<{ gen: Generation }>) {
       {/* Info */}
       <div className="p-4 space-y-2">
         <p className="text-sm text-ink font-semibold line-clamp-2 leading-snug">{gen.prompt}</p>
-        <div className="flex items-center justify-between text-xs text-gray-400 pt-1 border-t border-gray-50">
-          <span className="bg-navy/5 text-navy font-semibold px-2.5 py-1 rounded-lg">{modelName}</span>
+        <div className="flex items-center justify-between text-xs text-navy/45 pt-1 border-t border-navy/8">
+          <span className="bg-navy/8 text-navy font-semibold px-2.5 py-1 rounded-lg">{modelName}</span>
           <span>{date}</span>
         </div>
       </div>

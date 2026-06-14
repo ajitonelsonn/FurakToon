@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins, Inter } from "next/font/google";
+import { Sora, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -7,12 +7,14 @@ import PendoInit from "@/components/PendoInit";
 import { I18nProvider } from "@/lib/i18n/context";
 import { createClient } from "@/lib/supabase/server";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+// Sora — geometric, friendly display face for headings & brand.
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
+// Inter — clean, highly readable body text.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -35,8 +37,8 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" className={`${poppins.variable} ${inter.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-[#FFFBF5] text-[#1A1A2E] font-sans antialiased">
+    <html lang="en" data-scroll-behavior="smooth" className={`${sora.variable} ${inter.variable} h-full`}>
+      <body className="relative min-h-full flex flex-col bg-cream text-ink font-sans antialiased app-bg">
         <Script
           id="pendo-snippet"
           strategy="afterInteractive"
@@ -59,15 +61,18 @@ export default async function RootLayout({
 
           <main className="flex-1 flex flex-col">{children}</main>
 
-          <footer className="py-6 text-center text-xs text-gray-400 border-t border-gray-100">
+          <footer className="relative py-7 text-center text-xs text-navy/50 border-t border-navy/10 bg-white/40 backdrop-blur-sm">
           <p>
-            <span className="font-semibold text-fuchsia-500">FurakToon</span> —{" "}
-            <em>furak</em> means &ldquo;beautiful&rdquo; in Tetum ·{" "}
+            <span className="font-display font-bold text-navy">
+              Furak<span className="text-sky">Toon</span>
+            </span>{" "}
+            ·{" "}
+            <em>furak</em> means &ldquo;beautiful&rdquo; in Tetum 🇹🇱 ·{" "}
             <a
               href="https://www.mindtheproduct.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-gray-600 transition-colors"
+              className="hover:text-sky transition-colors font-medium"
             >
               Mind the Product Hackathon 2026
             </a>
