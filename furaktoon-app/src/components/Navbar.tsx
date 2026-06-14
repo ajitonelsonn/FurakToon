@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { useT } from "@/lib/i18n/context";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { User } from "@supabase/supabase-js";
 
 export default function Navbar({ user }: Readonly<{ user: User | null }>) {
@@ -57,6 +58,7 @@ export default function Navbar({ user }: Readonly<{ user: User | null }>) {
               >
                 <span>🖼️</span> {t("nav.gallery")}
               </Link>
+              <ThemeToggle />
               <LanguageSwitcher />
               <form action={logout} className="ml-1">
                 <button
@@ -81,6 +83,7 @@ export default function Navbar({ user }: Readonly<{ user: User | null }>) {
               >
                 {t("nav.getStarted")}
               </Link>
+              <ThemeToggle />
               <LanguageSwitcher />
             </>
           )}

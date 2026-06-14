@@ -5,6 +5,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import PendoInit from "@/components/PendoInit";
 import { I18nProvider } from "@/lib/i18n/context";
+import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme/context";
 import { createClient } from "@/lib/supabase/server";
 
 // Sora — geometric, friendly display face for headings & brand.
@@ -37,8 +38,12 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${sora.variable} ${inter.variable} h-full`}>
-      <body className="relative min-h-full flex flex-col bg-cream text-ink font-sans antialiased app-bg">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning className={`${sora.variable} ${inter.variable} h-full`}>
+      <head>
+        {/* Anti-flash: set the theme class before first paint. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="relative min-h-full flex flex-col font-sans antialiased app-bg">
         <Script
           id="pendo-snippet"
           strategy="afterInteractive"
@@ -56,6 +61,7 @@ export default async function RootLayout({
         />
 
         <PendoInit user={user} />
+        <ThemeProvider>
         <I18nProvider>
           <Navbar user={user} />
 
@@ -79,6 +85,7 @@ export default async function RootLayout({
           </p>
           </footer>
         </I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -70,6 +70,9 @@ export type TranslationKey =
   | "common.goBack"
   // language switcher
   | "language.label"
+  | "theme.toggle"
+  | "theme.light"
+  | "theme.dark"
   // home — logged in
   | "home.welcomeBack"
   | "home.welcomePrompt"
@@ -211,6 +214,10 @@ const en: Record<TranslationKey, string> = {
   "common.goBack": "Go back",
 
   "language.label": "Language",
+
+  "theme.toggle": "Toggle theme",
+  "theme.light": "Light",
+  "theme.dark": "Dark",
 
   "home.welcomeBack": "Welcome back 👋",
   "home.welcomePrompt": "What beautiful toon will you create today?",

@@ -31,7 +31,7 @@ export default function LanguageSwitcher() {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={t("language.label")}
-        className="flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:border-fuchsia-300 hover:text-fuchsia-600 transition-colors"
+        className="flex items-center gap-1.5 rounded-full border border-navy/15 px-3 py-1.5 text-sm font-medium text-navy/70 hover:border-sky/40 hover:text-sky transition-colors"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -51,7 +51,7 @@ export default function LanguageSwitcher() {
       {open && (
         <ul
           role="listbox"
-          className="absolute end-0 z-50 mt-2 max-h-80 w-56 overflow-y-auto rounded-xl border border-gray-100 bg-white py-1 shadow-lg"
+          className="glass absolute end-0 z-50 mt-2 max-h-80 w-56 overflow-y-auto rounded-2xl py-1 shadow-lift"
         >
           {LOCALES.map((l) => (
             <li key={l.code}>
@@ -63,14 +63,14 @@ export default function LanguageSwitcher() {
                   setLocale(l.code);
                   setOpen(false);
                 }}
-                className={`flex w-full items-center justify-between px-4 py-2 text-start text-sm hover:bg-fuchsia-50 ${
+                className={`flex w-full items-center justify-between px-4 py-2 text-start text-sm hover:bg-sky/10 transition-colors ${
                   l.code === locale
-                    ? "font-semibold text-fuchsia-600"
-                    : "text-gray-700"
+                    ? "font-semibold text-sky"
+                    : "text-navy/70"
                 }`}
               >
                 <span>{l.nativeName}</span>
-                <span className="text-xs text-gray-400">{l.name}</span>
+                <span className="text-xs text-navy/40">{l.name}</span>
               </button>
             </li>
           ))}

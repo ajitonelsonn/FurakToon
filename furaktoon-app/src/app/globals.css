@@ -21,6 +21,44 @@
   --shadow-lift: 0 18px 48px -12px rgba(22, 35, 92, 0.28);
 }
 
+/* ── Semantic theme tokens ──
+   These flip between light and dark. Components use the brand accents
+   (sky/orange/grape) directly, while shared surfaces (body, .surface, .glass,
+   .app-bg, scrollbar) read these tokens so a single class set works in both
+   themes. */
+:root {
+  --app-base: #F7F8FE;                       /* page background */
+  --text-base: #0C1330;                      /* default text */
+  --surface-bg: rgba(255, 255, 255, 0.82);   /* card surfaces */
+  --surface-border: rgba(22, 35, 92, 0.07);
+  --glass-bg: rgba(255, 255, 255, 0.62);     /* glass panels */
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --scrollbar: #3DA9F555;
+  --scrollbar-hover: #3DA9F5;
+  /* ambient background blob opacities */
+  --blob-sky: rgba(61, 169, 245, 0.16);
+  --blob-grape: rgba(124, 92, 252, 0.14);
+  --blob-orange: rgba(251, 139, 36, 0.12);
+  --shadow-soft: 0 4px 24px -6px rgba(22, 35, 92, 0.12);
+  --shadow-lift: 0 18px 48px -12px rgba(22, 35, 92, 0.28);
+}
+
+.dark {
+  --app-base: #0A0F24;                        /* deep navy-black page */
+  --text-base: #E7EAF6;                       /* soft off-white text */
+  --surface-bg: rgba(24, 32, 64, 0.72);       /* elevated dark card */
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(18, 25, 52, 0.55);         /* dark glass */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --scrollbar: #3DA9F566;
+  --scrollbar-hover: #3DA9F5;
+  --blob-sky: rgba(61, 169, 245, 0.18);
+  --blob-grape: rgba(124, 92, 252, 0.2);
+  --blob-orange: rgba(251, 139, 36, 0.12);
+  --shadow-soft: 0 4px 24px -8px rgba(0, 0, 0, 0.55);
+  --shadow-lift: 0 18px 48px -14px rgba(0, 0, 0, 0.7);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -30,11 +68,12 @@ html {
 }
 
 body {
-  background: var(--color-cream);
-  color: var(--color-ink);
+  background: var(--app-base);
+  color: var(--text-base);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -58,17 +97,17 @@ h1, h2, h3, h4, h5, h6 {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60rem 60rem at 8% -10%, rgba(61, 169, 245, 0.16), transparent 60%),
-    radial-gradient(48rem 48rem at 100% 0%, rgba(124, 92, 252, 0.14), transparent 55%),
-    radial-gradient(50rem 50rem at 50% 120%, rgba(251, 139, 36, 0.12), transparent 60%);
+    radial-gradient(60rem 60rem at 8% -10%, var(--blob-sky), transparent 60%),
+    radial-gradient(48rem 48rem at 100% 0%, var(--blob-grape), transparent 55%),
+    radial-gradient(50rem 50rem at 50% 120%, var(--blob-orange), transparent 60%);
 }
 
 /* ── Glassmorphism ── */
 .glass {
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px) saturate(150%);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-soft);
 }
 .glass-dark {
@@ -80,10 +119,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Card surface used across dashboard/create/gallery */
 .surface {
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--surface-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(22, 35, 92, 0.07);
+  border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-soft);
 }
 
@@ -113,8 +152,74 @@ h1, h2, h3, h4, h5, h6 {
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3DA9F555; border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: #3DA9F5; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+/* ── Dark-mode utility remap ──
+   The UI was built with navy text + white surfaces. Rather than rewrite every
+   component, we remap those specific utilities inside .dark so they read as
+   light text on translucent dark fills. Brand accents (sky/orange/grape/pink)
+   are intentionally left untouched. `bg-navy/40` & `bg-navy/80` are image
+   overlays and are deliberately NOT remapped. */
+.dark .text-navy { color: #E7EAF6 !important; }
+.dark .text-navy\/70 { color: rgba(231, 234, 246, 0.78) !important; }
+.dark .text-navy\/60 { color: rgba(231, 234, 246, 0.7) !important; }
+.dark .text-navy\/55 { color: rgba(231, 234, 246, 0.62) !important; }
+.dark .text-navy\/50 { color: rgba(231, 234, 246, 0.58) !important; }
+.dark .text-navy\/45 { color: rgba(231, 234, 246, 0.52) !important; }
+.dark .text-navy\/40 { color: rgba(231, 234, 246, 0.46) !important; }
+.dark .text-navy\/35 { color: rgba(231, 234, 246, 0.4) !important; }
+.dark .text-navy\/30 { color: rgba(231, 234, 246, 0.36) !important; }
+.dark .text-navy\/25 { color: rgba(231, 234, 246, 0.32) !important; }
+.dark .text-navy\/20 { color: rgba(231, 234, 246, 0.26) !important; }
+.dark .text-ink { color: #E7EAF6 !important; }
+
+/* White fills used for inputs/cards → subtle light-on-dark fills */
+.dark .bg-white { background-color: rgba(36, 46, 84, 0.9) !important; }
+.dark .bg-white\/80 { background-color: rgba(36, 46, 84, 0.6) !important; }
+.dark .bg-white\/70 { background-color: rgba(36, 46, 84, 0.5) !important; }
+.dark .bg-white\/60 { background-color: rgba(36, 46, 84, 0.4) !important; }
+.dark .bg-white\/50 { background-color: rgba(36, 46, 84, 0.34) !important; }
+.dark .bg-white\/40 { background-color: rgba(36, 46, 84, 0.3) !important; }
+
+/* navy-tinted chip fills read better slightly lighter on dark */
+.dark .bg-navy\/8 { background-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .bg-navy\/5 { background-color: rgba(255, 255, 255, 0.06) !important; }
+.dark .bg-navy\/15 { background-color: rgba(255, 255, 255, 0.14) !important; }
+
+/* navy hairline borders → light hairlines */
+.dark .border-navy\/10 { border-color: rgba(255, 255, 255, 0.1) !important; }
+.dark .border-navy\/8 { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .border-navy\/20 { border-color: rgba(255, 255, 255, 0.18) !important; }
+.dark .border-navy\/25 { border-color: rgba(255, 255, 255, 0.22) !important; }
+
+/* gray text used in a few inputs/placeholders */
+.dark .text-gray-400 { color: rgba(231, 234, 246, 0.5) !important; }
+.dark .text-gray-500 { color: rgba(231, 234, 246, 0.55) !important; }
+.dark .text-gray-600 { color: rgba(231, 234, 246, 0.62) !important; }
+.dark .text-gray-700 { color: rgba(231, 234, 246, 0.7) !important; }
+.dark .border-gray-100,
+.dark .border-gray-50 { border-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .border-gray-200 { border-color: rgba(255, 255, 255, 0.12) !important; }
+
+/* light gray fills (dropzone, secondary buttons) → translucent light on dark */
+.dark .bg-gray-50 { background-color: rgba(255, 255, 255, 0.04) !important; }
+.dark .bg-gray-100 { background-color: rgba(255, 255, 255, 0.08) !important; }
+.dark .bg-gray-200 { background-color: rgba(255, 255, 255, 0.12) !important; }
+.dark .hover\:bg-gray-50:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+.dark .hover\:bg-gray-200:hover { background-color: rgba(255, 255, 255, 0.14) !important; }
+
+/* cream textarea/input fills → dark surface */
+.dark .bg-cream\/50 { background-color: rgba(36, 46, 84, 0.4) !important; }
+.dark .bg-cream { background-color: var(--app-base) !important; }
+
+/* Showcase marquee edge fades — track the active app background */
+.marquee-fade-l {
+  background: linear-gradient(to right, var(--app-base), transparent);
+}
+.marquee-fade-r {
+  background: linear-gradient(to left, var(--app-base), transparent);
+}
 
 /* Glow utilities */
 .glow-sky {

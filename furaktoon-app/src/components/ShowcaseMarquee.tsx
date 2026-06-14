@@ -17,9 +17,9 @@ export default function ShowcaseMarquee() {
 
   return (
     <div className="marquee-pause relative w-full overflow-hidden py-2">
-      {/* edge fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 sm:w-28 bg-linear-to-r from-cream to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 sm:w-28 bg-linear-to-l from-cream to-transparent" />
+      {/* edge fade masks — fade to the current app background in both themes */}
+      <div className="marquee-fade-l pointer-events-none absolute inset-y-0 left-0 z-10 w-16 sm:w-28" />
+      <div className="marquee-fade-r pointer-events-none absolute inset-y-0 right-0 z-10 w-16 sm:w-28" />
 
       <div className="flex w-max gap-4 animate-marquee">
         {items.map((img, i) => (
