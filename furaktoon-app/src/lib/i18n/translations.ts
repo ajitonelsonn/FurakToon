@@ -92,6 +92,10 @@ export type TranslationKey =
   | "account.usageNormal"
   | "account.usageReference"
   | "account.startCreating"
+  // db status
+  | "status.checking"
+  | "status.online"
+  | "status.offline"
   // home — logged in
   | "home.welcomeBack"
   | "home.welcomePrompt"
@@ -256,6 +260,10 @@ const en: Record<TranslationKey, string> = {
   "account.usageNormal": "Standard generation",
   "account.usageReference": "With a reference image",
   "account.startCreating": "Start creating",
+
+  "status.checking": "Checking database…",
+  "status.online": "Database connected",
+  "status.offline": "Database offline",
 
   "home.welcomeBack": "Welcome back 👋",
   "home.welcomePrompt": "What beautiful toon will you create today?",
