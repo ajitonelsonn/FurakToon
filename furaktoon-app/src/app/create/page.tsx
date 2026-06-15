@@ -116,8 +116,18 @@ async function doEnhance(
       body: JSON.stringify({ prompt, style, hasReference }),
     });
     const data = await res.json();
-    if (data.enhanced) s.setPrompt(data.enhanced);
-    else s.setError(data.error ?? t("create.errEnhanceFailed"));
+    if (data.enhanced) {
+      s.setPrompt(data.enhanced);
+      if (typeof pendo !== "undefined") {
+        pendo.track("prompt_enhanced", {
+          style,
+          originalPromptLength: prompt.length,
+          enhancedPromptLength: data.enhanced.length,
+        });
+      }
+    } else {
+      s.setError(data.error ?? t("create.errEnhanceFailed"));
+    }
   } catch {
     s.setError(t("create.errEnhanceRetry"));
   } finally {
@@ -135,7 +145,17 @@ async function doGenerate(
 
   s.setPhase("safety");
   const safetyErr = await runSafetyCheck(prompt, t);
-  if (safetyErr) { s.setError(safetyErr); s.setPhase("safety_failed"); return; }
+  if (safetyErr) {
+    s.setError(safetyErr);
+    s.setPhase("safety_failed");
+    if (typeof pendo !== "undefined") {
+      pendo.track("generation_pipeline_error", {
+        stage: "safety_check",
+        errorMessage: safetyErr.substring(0, 100),
+      });
+    }
+    return;
+  }
 
   s.setPhase("safety_done");
   await delay(300);
@@ -472,6 +492,7 @@ export default function CreatePage() {
               ← {t("create.createAnother")}
             </button>
             <a
+              id="download-furaktoon"
               href={imageUrl}
               download="furaktoon.png"
               target="_blank"

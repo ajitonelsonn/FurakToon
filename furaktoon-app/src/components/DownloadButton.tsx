@@ -21,6 +21,7 @@ export default function DownloadButton({
 
   return (
     <a
+      id="download-furaktoon"
       href={imageUrl}
       download="furaktoon.png"
       target="_blank"

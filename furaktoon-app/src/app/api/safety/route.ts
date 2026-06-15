@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     const content = check.choices[0]?.message?.content ?? "{}";
     const verdict = JSON.parse(content) as { safe: boolean; reason?: string };
     return Response.json(verdict);
-  } catch {
+  } catch (err) {
+    console.error("[safety check error]", err);
     return Response.json({ error: "Safety check failed" }, { status: 500 });
   }
 }
