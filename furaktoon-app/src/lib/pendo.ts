@@ -18,7 +18,7 @@ export async function pendoTrackServer(
         type: "track",
         event,
         visitorId,
-        accountId: accountId ?? "system",
+        accountId: accountId ?? "furaktoon",
         timestamp: Date.now(),
         properties: properties ?? {},
       }),
