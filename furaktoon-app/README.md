@@ -64,9 +64,9 @@ Balance, monthly allowance, reset date, and credit costs.
 
 System-aware dark mode and the 21-language switcher.
 
-| Dark mode                                | Language switcher                        |
-| ---------------------------------------- | ---------------------------------------- |
-| ![Dark mode](../images/ss/dark-mode.png) | ![Languages](../images/ss/languages.png) |
+| Light mode                                 | Language switcher                        |
+| ------------------------------------------ | ---------------------------------------- |
+| ![Light mode](../images/ss/light-mode.png) | ![Languages](../images/ss/languages.png) |
 
 ---
 
@@ -202,6 +202,65 @@ src/
 ---
 
 ## 🔄 How it works
+
+### High-level flow
+
+```mermaid
+flowchart TD
+    A([Visitor lands on furaktoon.fun]) --> B{Logged in?}
+    B -- No --> C[Marketing hero + live DB status]
+    C --> D[Sign up / Sign in]
+    D -->|trigger grants 10 credits| E[Dashboard]
+    B -- Yes --> E[Dashboard]
+    E --> F[Create page]
+    F --> G[Write prompt · pick Anime/Cartoon · optional reference photo]
+    G --> H[[Generation pipeline]]
+    H --> I[Result: view + download]
+    I --> J[Saved to personal Gallery]
+    E --> K[Account: credits, allowance, reset date]
+```
+
+### Generation pipeline (what happens on “Generate”)
+
+```mermaid
+sequenceDiagram
+    participant U as User (Create page)
+    participant API as /api/generate
+    participant LLM as Together AI (Llama)
+    participant DB as Supabase (Postgres + Storage)
+    participant IMG as Together AI (Image model)
+
+    U->>API: prompt + style + (reference?)
+    API->>LLM: 1. Moderate prompt
+    LLM-->>API: safe / unsafe
+    alt unsafe
+        API-->>U: ❌ blocked
+    else safe
+        API->>DB: 2. spend_credits() (1 normal / 2 reference)
+        alt not enough credits
+            DB-->>API: -1
+            API-->>U: 💳 402 out of credits
+        else charged
+            opt reference image
+                API->>DB: 3. upload face to Storage
+            end
+            API->>IMG: 4. generate 1024×1024
+            alt generation failed
+                IMG-->>API: error
+                API->>DB: refund_credits()
+                API-->>U: ⚠️ error (credits refunded)
+            else success
+                IMG-->>API: image
+                API->>DB: 5. store image + insert generation row
+                API-->>U: ✅ image URL + new balance
+            end
+        end
+    end
+```
+
+> The four on-screen steps you see while generating — **Safety → Enhance →
+> Painting → Finalizing** — mirror this pipeline. Prompt **enhancement**
+> (`/api/enhance`, Llama 3.3 70B) is an optional one-click step before generating.
 
 ### Auth & route protection
 
