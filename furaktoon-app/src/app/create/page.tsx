@@ -194,6 +194,7 @@ async function doGenerate(
         modelId: selectedModel,
         modelName,
         promptLength: prompt.length,
+        usesReference: !!(referenceFile && IMAGE_MODELS.find((m) => m.id === selectedModel)?.supportsReferenceImage),
       });
     }
   } else {
@@ -313,6 +314,12 @@ export default function CreatePage() {
         // Auto-switch to a model that supports reference images
         const refModel = IMAGE_MODELS.find((m) => m.supportsReferenceImage);
         if (refModel) setSelectedModel(refModel.id);
+        if (typeof pendo !== "undefined") {
+          pendo.track("reference_image_uploaded", {
+            referenceImageSize: Math.round(f.size / 1024),
+            autoSwitchedModel: !!refModel,
+          });
+        }
       },
       setError,
       t,

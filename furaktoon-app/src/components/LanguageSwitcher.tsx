@@ -60,6 +60,9 @@ export default function LanguageSwitcher() {
                 role="option"
                 aria-selected={l.code === locale}
                 onClick={() => {
+                  if (typeof pendo !== "undefined" && l.code !== locale) {
+                    pendo.track("language_switched", { fromLocale: locale, toLocale: l.code });
+                  }
                   setLocale(l.code);
                   setOpen(false);
                 }}
