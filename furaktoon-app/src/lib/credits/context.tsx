@@ -23,6 +23,17 @@ export function CreditsProvider({
 }: Readonly<{ initialBalance: number | null; children: ReactNode }>) {
   const [balance, setBalance] = useState<number | null>(initialBalance);
 
+  // The server layout re-runs after auth changes (login → redirect, logout) and
+  // passes a fresh `initialBalance`. The provider instance is reused across that
+  // navigation, so plain useState would keep the stale value until a hard
+  // refresh. Reconcile during render when the server value changes — this is
+  // React's "adjusting state when a prop changes" pattern (no effect needed).
+  const [lastInitial, setLastInitial] = useState<number | null>(initialBalance);
+  if (initialBalance !== lastInitial) {
+    setLastInitial(initialBalance);
+    setBalance(initialBalance);
+  }
+
   const value = useMemo<CreditsContextValue>(
     () => ({ balance, setBalance }),
     [balance]
