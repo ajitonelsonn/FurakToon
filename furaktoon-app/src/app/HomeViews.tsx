@@ -5,7 +5,6 @@ import Image from "next/image";
 import type { Generation } from "@/lib/supabase/types";
 import { useT } from "@/lib/i18n/context";
 import ShowcaseMarquee from "@/components/ShowcaseMarquee";
-import DbStatusBadge from "@/components/DbStatusBadge";
 
 /* ── Logged-in dashboard ── */
 export function LoggedInHome({
@@ -133,13 +132,10 @@ export function MarketingHome() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(50rem_30rem_at_50%_0%,rgba(61,169,245,0.25),transparent_70%)]" />
 
         <div className="relative max-w-3xl mx-auto space-y-6 animate-rise">
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full glass-dark px-4 py-1.5 text-xs font-semibold text-white/90">
-              <span className="aurora h-2 w-2 rounded-full" />
-              {t("marketing.furakMeans")}
-            </span>
-            <DbStatusBadge />
-          </div>
+          <span className="inline-flex items-center gap-2 rounded-full glass-dark px-4 py-1.5 text-xs font-semibold text-white/90">
+            <span className="aurora h-2 w-2 rounded-full" />
+            {t("marketing.furakMeans")}
+          </span>
 
           <Image
             src="/logo-with-text.png"

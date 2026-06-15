@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import PendoInit from "@/components/PendoInit";
+import DbStatusBadge from "@/components/DbStatusBadge";
 import { I18nProvider } from "@/lib/i18n/context";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme/context";
 import { CreditsProvider } from "@/lib/credits/context";
@@ -88,6 +89,9 @@ export default async function RootLayout({
             >
               Mind the Product Hackathon 2026
             </a>
+          </p>
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-navy/45">
+            <DbStatusBadge />
           </p>
           </footer>
           </CreditsProvider>

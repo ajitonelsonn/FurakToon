@@ -5,8 +5,9 @@ import { useT } from "@/lib/i18n/context";
 
 type Status = "checking" | "online" | "offline";
 
-// Small pill showing live Supabase DB reachability. Useful on the free tier,
-// where the project can pause/suspend and needs a manual resume.
+// Minimal inline indicator of live Supabase DB reachability — designed for the
+// footer. Useful on the free tier, where the project can pause/suspend and needs
+// a manual resume.
 export default function DbStatusBadge() {
   const t = useT();
   const [status, setStatus] = useState<Status>("checking");
@@ -45,13 +46,13 @@ export default function DbStatusBadge() {
       role="status"
       aria-live="polite"
       title={c.label}
-      className="inline-flex items-center gap-2 rounded-full glass-dark px-3 py-1.5 text-xs font-medium text-white/85"
+      className="inline-flex items-center gap-1.5 align-middle"
     >
-      <span className="relative flex h-2.5 w-2.5">
+      <span className="relative flex h-2 w-2">
         {status !== "offline" && (
           <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${c.ring}`} />
         )}
-        <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${c.dot}`} />
+        <span className={`relative inline-flex h-2 w-2 rounded-full ${c.dot}`} />
       </span>
       {c.label}
     </span>
