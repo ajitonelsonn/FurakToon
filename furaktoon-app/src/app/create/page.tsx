@@ -261,6 +261,7 @@ export default function CreatePage() {
   const [warning, setWarning]               = useState<string | null>(null);
   const [enhancing, setEnhancing]           = useState(false);
   const [dragOver, setDragOver]             = useState(false);
+  const [filePickerActive, setFilePickerActive] = useState(false);
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const resultRef     = useRef<HTMLDivElement>(null);
 
@@ -273,6 +274,7 @@ export default function CreatePage() {
   }, [phase]);
 
   function handleReferenceFile(file: File) {
+    setFilePickerActive(false);
     processDroppedFile(
       file,
       (f) => {
@@ -584,9 +586,12 @@ export default function CreatePage() {
                 const file = e.dataTransfer.files[0];
                 if (file) handleReferenceFile(file);
               }}
+              onClick={() => { setFilePickerActive(true); setTimeout(() => setFilePickerActive(false), 3000); }}
               className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-2xl py-7 px-4 cursor-pointer transition-all duration-150 ${
                 dragOver
                   ? "border-sky bg-sky/5 scale-[1.01]"
+                  : filePickerActive
+                  ? "border-sky/50 bg-sky/5"
                   : "border-gray-200 hover:border-sky/50 hover:bg-gray-50"
               }`}
             >
