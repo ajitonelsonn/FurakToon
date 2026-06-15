@@ -1,0 +1,29 @@
+name: Keep Supabase awake
+
+# Free-tier Supabase pauses after ~7 days of inactivity. This workflow pings the
+# app's /api/health endpoint (which queries Supabase) on a schedule so the
+# database stays live — important during hackathon judging.
+
+on:
+  schedule:
+    # Every 6 hours (at minute 0). Cron is UTC.
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {} # allow manual runs from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          echo "Pinging FurakToon health endpoint…"
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 \
+            "https://www.furaktoon.fun/api/health")
+          echo "HTTP status: $code"
+          # /api/health returns 200 when Supabase is reachable, 503 when down.
+          # We don't fail the job on 503 — the goal is just to wake/keep it warm.
+          if [ "$code" = "200" ]; then
+            echo "Database is awake ✅"
+          else
+            echo "Health check returned $code (DB may be waking up) ⚠️"
+          fi

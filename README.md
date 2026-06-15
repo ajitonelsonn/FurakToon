@@ -5,19 +5,35 @@ short idea into an anime or cartoon character in seconds — pick a style, hit
 generate, and download your creation. _Furak_ means "beautiful" in Tetum
 (Timor-Leste).
 
-Built for the Mind the Product Hackathon 2026.
+Built for the **Mind the Product — World Product Day 2026** hackathon
+("Everyone Ships Now").
 
 🔗 **Live app: [furaktoon.fun](https://www.furaktoon.fun/)**
 
 ---
 
-## 🤝 Built & shipped with Novus AI
+## 🏁 Hackathon eligibility
 
-FurakToon was developed end-to-end with **Novus AI** — from the generation
-pipeline and credits system to the multilingual UI, theming, and database
-integration.
+- **New project for this hackathon.** First commit on **Jun 4, 2026** —
+  [`75cb0c6`](https://github.com/ajitonelsonn/FurakToon/commit/75cb0c6ae7f1f80ad3ec58bc694a4868fd207f92)
+  (well after the May 20 start date).
+- **Deployed & public:** [furaktoon.fun](https://www.furaktoon.fun/) — a stranger
+  can land on the URL and create an image right now.
+- **Novus.ai installed** (required) — see below.
 
-![FurakToon built with Novus AI](images/ss/app/image.png)
+---
+
+## 📊 Analytics — Novus.ai (installed)
+
+The required **Novus.ai** product analytics is installed on the deployed app.
+Novus runs on **Pendo**, so it's wired in via the Pendo agent loaded in
+[`furaktoon-app/src/app/layout.tsx`](furaktoon-app/src/app/layout.tsx) plus
+server-side event tracking in
+[`furaktoon-app/src/lib/pendo.ts`](furaktoon-app/src/lib/pendo.ts). It captures
+page loads and key product events (sign-up, login, generations, downloads,
+moderation blocks, out-of-credits).
+
+![Novus.ai installed on FurakToon](images/ss/app/image.png)
 
 ---
 
