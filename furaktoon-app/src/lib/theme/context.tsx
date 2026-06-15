@@ -73,15 +73,18 @@ function subscribe(onChange: () => void) {
   };
 }
 
+// Default preference for visitors who haven't chosen one yet. Dark by default.
+const DEFAULT_PREF: ThemePref = "dark";
+
 function getPrefSnapshot(): ThemePref {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  return isPref(stored) ? stored : "system";
+  return isPref(stored) ? stored : DEFAULT_PREF;
 }
 
-// SSR/first render: assume system→light to match the anti-flash script's
-// default and avoid a hydration mismatch on the markup.
+// SSR/first render: use the default preference to match the anti-flash script
+// and avoid a hydration mismatch on the markup.
 function getServerSnapshot(): ThemePref {
-  return "system";
+  return DEFAULT_PREF;
 }
 
 function persistPref(pref: ThemePref) {
@@ -136,7 +139,8 @@ export const THEME_INIT_SCRIPT = `
     var k = '${THEME_STORAGE_KEY}';
     var p = localStorage.getItem(k);
     var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var dark = p === 'dark' || ((p === 'system' || p === null) && sysDark);
+    // No saved preference defaults to dark; 'system' follows the OS.
+    var dark = p === 'dark' || p === null || (p === 'system' && sysDark);
     var el = document.documentElement;
     el.classList.toggle('dark', dark);
     el.style.colorScheme = dark ? 'dark' : 'light';

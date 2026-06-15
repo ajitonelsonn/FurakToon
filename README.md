@@ -7,6 +7,8 @@ generate, and download your creation. _Furak_ means "beautiful" in Tetum
 
 Built for the Mind the Product Hackathon 2026.
 
+🔗 **Live app: [furaktoon.fun](https://www.furaktoon.fun/)**
+
 ---
 
 ## 🤝 Built & shipped with Novus AI
