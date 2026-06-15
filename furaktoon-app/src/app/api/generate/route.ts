@@ -176,6 +176,11 @@ async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageU
   if (!storedUrl) {
     return Response.json({ error: "Image generated but could not be saved. Please try again." }, { status: 500 });
   }
+  await pendoTrackServer("image_generated", userId, {
+    style,
+    modelId,
+    promptLength: prompt.length,
+  });
   const { error: dbError } = await supabase.from("generations").insert({
     user_id: userId, prompt, style, model: modelId, image_url: storedUrl,
   });
@@ -183,11 +188,6 @@ async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageU
     console.error("[db insert error]", dbError);
     return Response.json({ imageUrl: storedUrl, creditsRemaining, warning: "Image generated but not saved to gallery: " + dbError.message });
   }
-  await pendoTrackServer("image_generated", userId, {
-    style,
-    modelId,
-    promptLength: prompt.length,
-  });
   return Response.json({ imageUrl: storedUrl, creditsRemaining });
 }
 

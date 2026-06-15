@@ -149,7 +149,7 @@ async function doGenerate(
     s.setError(safetyErr);
     s.setPhase("safety_failed");
     if (typeof pendo !== "undefined") {
-      pendo.track("generation_pipeline_error", {
+      pendo.track("content_moderation_blocked", {
         stage: "safety_check",
         errorMessage: safetyErr.substring(0, 100),
       });
@@ -170,6 +170,14 @@ async function doGenerate(
     s.setOutOfCredits(true);
     s.setCredits(0);
     s.setPhase("idle");
+    if (typeof pendo !== "undefined") {
+      pendo.track("image_generation_failed", {
+        style,
+        modelId: selectedModel,
+        errorMessage: "out_of_credits",
+        promptLength: prompt.length,
+      });
+    }
     return;
   }
   if (result.imageUrl) {

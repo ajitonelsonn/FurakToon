@@ -8,7 +8,7 @@ export async function pendoTrackServer(
   accountId?: string
 ) {
   try {
-    await fetch(PENDO_TRACK_URL, {
+    const res = await fetch(PENDO_TRACK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -23,7 +23,10 @@ export async function pendoTrackServer(
         properties: properties ?? {},
       }),
     });
-  } catch {
-    // Do not let tracking failures break application flow
+    if (!res.ok) {
+      console.error("[pendo track failed]", event, res.status, await res.text().catch(() => ""));
+    }
+  } catch (err) {
+    console.error("[pendo track error]", event, err);
   }
 }
