@@ -4,8 +4,12 @@ import Image from "next/image";
 export const SHOWCASE_IMAGES = [
   { src: "/bg/anime1.jpeg", alt: "Anime character showcase", tag: "Anime" },
   { src: "/bg/cartoon1.jpeg", alt: "Cartoon character showcase", tag: "Cartoon" },
-  { src: "/bg/anime2.jpeg", alt: "Anime portrait showcase", tag: "Anime" },
+  { src: "/bg/anime3.jpeg", alt: "Timor-Leste anime showcase", tag: "Anime" },
   { src: "/bg/cartoon2.jpeg", alt: "Cartoon scene showcase", tag: "Cartoon" },
+  { src: "/bg/anime2.jpeg", alt: "Anime portrait showcase", tag: "Anime" },
+  { src: "/bg/cartoon3.jpeg", alt: "Timor-Leste cartoon showcase", tag: "Cartoon" },
+  { src: "/bg/anime4.jpeg", alt: "Anime warrior showcase", tag: "Anime" },
+  { src: "/bg/anime5.jpeg", alt: "Anime scene showcase", tag: "Anime" },
 ] as const;
 
 /**

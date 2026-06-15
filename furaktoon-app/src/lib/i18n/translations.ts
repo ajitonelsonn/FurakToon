@@ -192,6 +192,8 @@ export type TranslationKey =
   | "gallery.emptyTitle"
   | "gallery.emptyHint"
   | "gallery.makeFirst"
+  | "gallery.viewImage"
+  | "gallery.close"
   // auth — shared
   | "auth.tagline"
   | "auth.emailLabel"
@@ -365,6 +367,8 @@ const en: Record<TranslationKey, string> = {
   "gallery.emptyTitle": "Your gallery is empty",
   "gallery.emptyHint": "Create your first toon and it will appear here",
   "gallery.makeFirst": "Make your first toon",
+  "gallery.viewImage": "View image",
+  "gallery.close": "Close",
 
   "auth.tagline": "Beautiful AI Cartoons",
   "auth.emailLabel": "Email",
