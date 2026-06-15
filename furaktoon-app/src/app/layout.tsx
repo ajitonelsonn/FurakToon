@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Sora, Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import PendoInit from "@/components/PendoInit";
@@ -48,11 +47,9 @@ export default async function RootLayout({
       <head>
         {/* Anti-flash: set the theme class before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
-      <body className="relative min-h-full flex flex-col font-sans antialiased app-bg">
-        <Script
-          id="pendo-snippet"
-          strategy="afterInteractive"
+        {/* Pendo stub: must run synchronously before React hydrates so window.pendo
+            is always defined when PendoInit's useEffect fires. */}
+        <script
           dangerouslySetInnerHTML={{
             __html: `
 (function(apiKey){
@@ -65,6 +62,8 @@ export default async function RootLayout({
             `,
           }}
         />
+      </head>
+      <body className="relative min-h-full flex flex-col font-sans antialiased app-bg">
 
         <PendoInit user={user} />
         <ThemeProvider>
