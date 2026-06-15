@@ -118,12 +118,12 @@ async function storeGeneratedImage(
       .upload(fileName, imgBuffer, { contentType: "image/png" });
     if (error) {
       console.error("[storage upload error]", error);
-      return source.url ?? "";
+      return "";
     }
     return serviceSupabase.storage.from("images").getPublicUrl(fileName).data.publicUrl;
   } catch (e) {
     console.error("[storage exception]", e);
-    return source.url ?? "";
+    return "";
   }
 }
 
@@ -173,6 +173,9 @@ async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageU
     isDataUrl ? { b64: imageUrl.split(",")[1] } : { url: imageUrl },
     userId,
   );
+  if (!storedUrl) {
+    return Response.json({ error: "Image generated but could not be saved. Please try again." }, { status: 500 });
+  }
   const { error: dbError } = await supabase.from("generations").insert({
     user_id: userId, prompt, style, model: modelId, image_url: storedUrl,
   });
@@ -180,6 +183,11 @@ async function saveAndRespond({ supabase, userId, prompt, style, modelId, imageU
     console.error("[db insert error]", dbError);
     return Response.json({ imageUrl: storedUrl, creditsRemaining, warning: "Image generated but not saved to gallery: " + dbError.message });
   }
+  await pendoTrackServer("image_generated", userId, {
+    style,
+    modelId,
+    promptLength: prompt.length,
+  });
   return Response.json({ imageUrl: storedUrl, creditsRemaining });
 }
 
@@ -266,6 +274,11 @@ export async function POST(request: Request) {
   // Generation failed — refund the credits we charged.
   if (genError) {
     await refundCredits(cost);
+    await pendoTrackServer("image_generation_failed", user.id, {
+      style,
+      modelId,
+      errorType: "api_error",
+    });
     return genError;
   }
   if (!imageUrl) {

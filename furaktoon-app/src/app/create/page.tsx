@@ -159,9 +159,26 @@ async function doGenerate(
     if (result.warning) s.setWarning(result.warning);
     if (typeof result.creditsRemaining === "number") s.setCredits(result.creditsRemaining);
     s.setPhase("done");
+    if (typeof pendo !== "undefined") {
+      const modelName = IMAGE_MODELS.find((m) => m.id === selectedModel)?.name ?? selectedModel;
+      pendo.track("image_generated", {
+        style,
+        modelId: selectedModel,
+        modelName,
+        promptLength: prompt.length,
+      });
+    }
   } else {
     s.setError(result.error ?? t("create.errGenFailed"));
     s.setPhase("error");
+    if (typeof pendo !== "undefined") {
+      pendo.track("image_generation_failed", {
+        style,
+        modelId: selectedModel,
+        errorMessage: (result.error ?? "Generation failed").substring(0, 100),
+        promptLength: prompt.length,
+      });
+    }
   }
 }
 
