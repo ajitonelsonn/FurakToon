@@ -49,6 +49,14 @@ export async function register(formData: FormData) {
     signup_source: "registration_form",
   });
 
+  // When email confirmation is enabled, signUp returns a user but no session,
+  // and `identities` is empty. Tell the client to show "check your email"
+  // instead of redirecting to a protected page the user can't reach yet.
+  const needsConfirmation = !authData.session;
+  if (needsConfirmation) {
+    return { needsConfirmation: true, email: data.email };
+  }
+
   revalidatePath("/", "layout");
   redirect("/create");
 }

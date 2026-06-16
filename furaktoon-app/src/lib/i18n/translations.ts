@@ -214,7 +214,10 @@ export type TranslationKey =
   | "auth.creatingAccount"
   | "auth.getStartedCta"
   | "auth.haveAccount"
-  | "auth.signInLink";
+  | "auth.signInLink"
+  | "auth.checkEmailTitle"
+  | "auth.checkEmailBody"
+  | "auth.backToSignIn";
 
 export const DEFAULT_LOCALE: Locale = "en";
 
@@ -390,6 +393,10 @@ const en: Record<TranslationKey, string> = {
   "auth.getStartedCta": "Get started",
   "auth.haveAccount": "Already have an account?",
   "auth.signInLink": "Sign in",
+  "auth.checkEmailTitle": "Check your email",
+  "auth.checkEmailBody":
+    "We sent a confirmation link to {email}. Click it to finish signing up, then come back and sign in.",
+  "auth.backToSignIn": "Back to sign in",
 };
 
 // The English dict is exported so per-locale files can reference it for typing

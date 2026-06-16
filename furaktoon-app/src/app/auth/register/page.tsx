@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const t = useT();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -19,7 +20,14 @@ export default function RegisterPage() {
     if (result?.error) {
       setError(result.error);
       setLoading(false);
+      return;
     }
+    if (result?.needsConfirmation) {
+      // Email confirmation required — show a "check your email" screen.
+      setSentTo(result.email ?? (formData.get("email") as string));
+      setLoading(false);
+    }
+    // Otherwise the server action redirects to /create (no confirmation needed).
   }
 
   return (
@@ -41,6 +49,23 @@ export default function RegisterPage() {
             </div>
 
             <div className="glass rounded-4xl p-8">
+              {sentTo ? (
+                /* Confirmation sent — check your email */
+                <div className="text-center animate-fade-in">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky/12 text-3xl">📬</div>
+                  <h2 className="font-display text-2xl font-extrabold text-navy mb-2">{t("auth.checkEmailTitle")}</h2>
+                  <p className="text-sm text-navy/60 leading-relaxed">
+                    {t("auth.checkEmailBody", { email: sentTo })}
+                  </p>
+                  <Link
+                    href="/auth/login"
+                    className="btn-gradient mt-6 inline-flex w-full items-center justify-center font-bold py-3.5 rounded-2xl"
+                  >
+                    {t("auth.backToSignIn")}
+                  </Link>
+                </div>
+              ) : (
+              <>
               <h2 className="font-display text-2xl font-extrabold text-navy mb-1 text-center">{t("auth.registerTitle")}</h2>
               <p className="text-center text-sm text-navy/55 mb-7">{t("auth.registerSubtitle")}</p>
 
@@ -92,6 +117,8 @@ export default function RegisterPage() {
                 {t("auth.haveAccount")}{" "}
                 <Link href="/auth/login" className="text-sky font-bold hover:underline">{t("auth.signInLink")}</Link>
               </div>
+              </>
+              )}
             </div>
           </div>
         </div>
