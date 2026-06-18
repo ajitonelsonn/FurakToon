@@ -13,12 +13,19 @@ declare global {
 
 function getAnonId(): string {
   const key = "pendo_anon_id";
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = `anon-${crypto.randomUUID()}`;
-    localStorage.setItem(key, id);
+  try {
+    let id = localStorage.getItem(key);
+    // Regenerate if missing or if a legacy/corrupted value (e.g. the literal
+    // string "anonymous") slipped in — every anon ID must follow anon-<uuid>.
+    if (!id || !id.startsWith("anon-")) {
+      id = `anon-${crypto.randomUUID()}`;
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    // localStorage unavailable (storage blocked, quota exceeded, etc.)
+    return `anon-${crypto.randomUUID()}`;
   }
-  return id;
 }
 
 function buildConfig(user: User | null) {
