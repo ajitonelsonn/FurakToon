@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Generation } from "@/lib/supabase/types";
 import { useT } from "@/lib/i18n/context";
 import ShowcaseMarquee from "@/components/ShowcaseMarquee";
+import ImageLightbox from "@/components/ImageLightbox";
 
 /* ── Logged-in dashboard ── */
 export function LoggedInHome({
@@ -13,6 +15,7 @@ export function LoggedInHome({
 }: Readonly<{ email: string; recent: Generation[] }>) {
   const t = useT();
   const name = email.split("@")[0];
+  const [active, setActive] = useState<Generation | null>(null);
 
   return (
     <div className="flex-1 px-4 sm:px-6 py-10 max-w-6xl mx-auto w-full space-y-8">
@@ -87,19 +90,31 @@ export function LoggedInHome({
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {recent.map((gen) => (
               <div key={gen.id} className="group surface rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lift hover:border-sky/30">
-                <div className="relative aspect-square overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setActive(gen)}
+                  aria-label={t("gallery.viewImage")}
+                  className="relative aspect-square w-full overflow-hidden block cursor-zoom-in"
+                >
                   <Image src={gen.image_url} alt={gen.prompt} fill className="object-cover group-hover:scale-105 transition-transform duration-300" unoptimized />
                   <div className="absolute inset-0 bg-linear-to-t from-navy/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span className={`absolute top-2 left-2 text-xs font-bold px-2.5 py-1 rounded-full shadow-md ${gen.style === "anime" ? "bg-sky text-white" : "bg-orange text-white"}`}>
                     {gen.style === "anime" ? t("create.anime") : t("create.cartoon")}
                   </span>
-                </div>
+                  <span className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-navy shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
+                    ⤢
+                  </span>
+                </button>
                 <p className="px-3 py-2 text-xs text-navy/60 truncate font-medium">{gen.prompt}</p>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {active && (
+        <ImageLightbox gen={active} onClose={() => setActive(null)} source="dashboard_recent" />
+      )}
     </div>
   );
 }
